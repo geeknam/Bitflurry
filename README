@@ -1,0 +1,5 @@
+How to use:
+$ ./slice.out test.txt
+
+How to join files back:
+$ cat test.txt.1 test.txt.2 test.txt.3 test.txt.4 > joined.txt

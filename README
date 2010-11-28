@@ -1,5 +1,18 @@
-How to use:
-$ ./slice.out test.txt
+bitflurry
+(c)2010 FANI FYP Team / Republic Polytechnic
 
-How to join files back:
-$ cat test.txt.1 test.txt.2 test.txt.3 test.txt.4 > joined.txt
+Requirements
+---------------
+- gcc
+- sqlite3
+- libsqlite3-dev
+
+On Ubuntu: sudo apt-get install sqlite3 libsqlite3-dev gcc
+
+How to compile
+---------------
+gcc -o bitflurry bitflurry.c database.c -lm -lsqlite3
+
+TODO
+---------------
+- Makefile

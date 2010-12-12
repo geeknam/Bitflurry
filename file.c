@@ -1,10 +1,41 @@
 #include "file.h"
 #include "galois.h"
+#include <sqlite3.h>
 
 #define BUFFER_SIZE 1048576 // 1Mb 1048576
 #define CHUNK_SIZE 4*BUFFER_SIZE // We use 4MB as our chunk size
 
+
+static int callback(void * ptr, int argc, char **argv, char **azColName){
+	int i;
+	int end = 0;
+	char *sqlquery = NULL;
+	
+	sqlite3 *db;
+	int rc;
+	
+	//open db connection 
+	rc = sqlite3_open("file.db", &db);
+	if( rc ){
+	  fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+	  sqlite3_close(db);
+	}
+	
+	sqlquery = (char *) realloc(sqlquery, (60 * sizeof(char)));    //sizeof
+	sprintf (sqlquery, "INSERT INTO files values ('%s', %s, 2)", &ptr, argv[1]);
+	rc = sqlite3_exec(db, sqlquery, NULL, 0, NULL);
+	if( rc!=SQLITE_OK ){
+	  fprintf(stderr, "SQL error: %s\n", zErrMsg);
+	}
+	sqlite3_close(db);
+	
+	printf("INSERTED !!!");
+	free(sqlquery);
+	return 0;
+}
+
 int main (int argc, char *argv[]) {
+	
 	// first argument: file to slice
 	if (argv[1] == NULL) {
 		printf("bitflurry [files component ONLY]\n");
@@ -108,7 +139,6 @@ int main (int argc, char *argv[]) {
 /* Get size in bytes of the specified file */
 long getFileSize(const char *filename){
     struct stat statBuffer;
-
     if (stat(filename, &statBuffer) != 0)
     {
         printf("\n\nERROR: Unable to obtain attributes of file %s.", filename);
@@ -126,6 +156,18 @@ int putFile(const char *filename) {
 	long num_slices;	      		//number of slices
 	int slice_index;		  		//used in the loop
 	int last_slice_index;
+	
+	sqlite3 *db;
+	char *zErrMsg = 0;
+	int rc;
+	
+	//open db connection 
+	rc = sqlite3_open("file.db", &db);
+	if( rc ){
+	  fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+	  sqlite3_close(db);
+	}
+	
 	
 	// our mounts hardcoded for now
 	char *dirs[] = {"chocolate", "strawberry"};
@@ -151,7 +193,7 @@ int putFile(const char *filename) {
 	int dir_index = 0; // our raid dirs indexer
 	
 	for (slice_index = 1; slice_index <= num_slices+1; slice_index++) {
-		// allocate memory for the name of the output files
+		// allocate memory for the name of the output files E.g: out/chocolate/movie.avi.2
 		file_out = (char *) realloc(file_out, (4 + strlen(dirs[dir_index]) + 1 + strlen(filename) + 1 + digits + 1) * sizeof(char));    //sizeof(char) = 1 byte
 
 		//printf("Allocated %d for out filename.\n", (4 + strlen(dirs[dir_index]) + 1 + strlen(filename) + 1 + digits + 1) * sizeof(char));
@@ -180,8 +222,16 @@ int putFile(const char *filename) {
 		dir_index++;
 		if (dir_index > 1) dir_index = 0;
 	}	
+	
+	// Execute SQL query
+	rc = sqlite3_exec(db, "SELECT start+len-1 FROM files WHERE rowid = (SELECT MAX(rowid) FROM files)", callback, &filename, &zErrMsg);
+	if( rc!=SQLITE_OK ){
+		fprintf(stderr, "SQL error: %s\n", zErrMsg);
+	}
+	
 	fclose(fp_in);			// close the original file	
 	free(file_out);			// free the memory
+	sqlite3_close(db);
 }
 
 int getFile(const char *out_file, int total_drives, const char *files[]) {
@@ -272,6 +322,7 @@ void createFileFromXOR(const char *out_file, int total_drives, const char *files
 	
 	FILE *fp[total_drives];
 
+	// Opening all the files in all the mount
 	int i = 0;
 	while (i < total_drives) {
 		printf("Opening %s....", files[i]);
@@ -392,3 +443,4 @@ void createFileFromXOR2(const char *out_file, int total_drives, unsigned int dri
 	}
 	fclose(file_out);
 }
+

@@ -308,6 +308,74 @@ bf_file* db_getFile(char *filename) {
 	return file;
 }
 
+int db_isFileExist(char *filename) {
+	int retval = 0;
+	int existence = 0;
+	
+	// If db is not opened failed, handle returns NULL
+    if (db_opened == 0)
+    {
+        printf("DB Error: Database connection not opened.\n");
+        return -1;
+    }
+
+	// Construct our query
+	//		- Count the number of expected results to create our array
+	char *select_query = NULL;
+	select_query = realloc(select_query, (strlen("SELECT COUNT(*) FROM files WHERE filename = \"\"") + strlen(filename) + 1) * sizeof(char));
+	if (select_query == NULL) return -1;
+	sprintf(select_query, "SELECT COUNT(*) FROM files WHERE filename = \"%s\"", filename);
+
+	// Self explanatory codes from here on...
+	retval = sqlite3_prepare_v2(db_handle, select_query, -1, &db_stmt, 0);
+	if (retval)
+	{
+	    printf("DB: Unknown error while retrieving data.\n");
+	    return -1;
+	}
+	
+	free(select_query);
+
+	// Read the number of rows fetched
+	int cols = sqlite3_column_count(db_stmt);
+
+	while (1)
+	{
+	    // fetch a row's status
+	    retval = sqlite3_step(db_stmt);
+
+	    if (retval == SQLITE_ROW)
+	    {
+	        // SQLITE_ROW means fetched a row
+
+	        int col;
+			for(col = 0; col < cols; col++)
+	        {
+				const char *col_name = sqlite3_column_name(db_stmt, col);
+	            int val = sqlite3_column_int(db_stmt, col);
+	            //printf("%s = %d\t", sqlite3_column_name(db_stmt, col), val);
+
+				existence = val;
+	        }
+			//printf("\n");
+	    }
+	    else if(retval == SQLITE_DONE)
+	    {
+	        // All rows finished
+	        //printf("DB: All rows fetched.\n");
+	        break;
+	    }
+	    else
+	    {
+	        // Some error encountered
+	        printf("DB: Unknown error while retrieving data.\n");
+	        return -1;
+	    }
+	}
+
+	return existence;
+}
+
 int toDigit(int number) {
 	char digits[5];
 	sprintf(digits, "%d", number);

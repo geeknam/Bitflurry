@@ -63,5 +63,10 @@ int db_getLastIndex(int index[]);
 // gets filename from database
 //		return: bf_file
 bf_file* db_getFile(char *filename);
+
+// check if file exist
+//		return: -1, 0 or 1
+int db_isFileExist(char *filename);
+		
 int toDigit(int number);
 #endif

@@ -25,7 +25,6 @@ void fs_putFile(char *filename) {
 	int slice_index;		  			//used in the loop
 	int last_slice_index;
 
-
 	char *file_out = NULL;
 	FILE *fp_in;
 	FILE *fp_out;
@@ -43,6 +42,14 @@ void fs_putFile(char *filename) {
 	fp_in = fopen(filename, "rb");								// open original file
 
 	int dir_index = 0; 											// our raid dirs indexer
+	
+	// Make sure there is no duplicate filenames in the database
+	while (db_isFileExist(filename)) {
+		char *filename_new = malloc((strlen(filename) + 5) * sizeof(char));
+		sprintf(filename_new, "%s.new", filename);
+		
+		filename = filename_new;
+	}
 	
 	int id = 0;
 	id = db_insertFile(filename);

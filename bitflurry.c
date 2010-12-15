@@ -58,6 +58,8 @@ int main (int argc, char *argv[]) {
 }
 
 void loadConfig() {
+	cfg_getValueForKey("DATABASE_NAME", &DB_DATABASE_NAME);
+	
 	char disk_total[50] = "0";
 	cfg_getValueForKey("DISK_TOTAL", &disk_total);
 	DISK_TOTAL = atoi(disk_total);

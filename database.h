@@ -9,7 +9,7 @@
 
 #include <sqlite3.h>
 
-#define DB_DATABASE_NAME "bitflurry.db"
+char DB_DATABASE_NAME[50];
 
 // FARUQ: THIS LIBRARY IS NOT THREAD SAFE!!
 

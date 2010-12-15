@@ -3,7 +3,7 @@
 
 CC      = gcc
 CFLAGS  = -lm -lsqlite3
-OBJECTS = bitflurry.c database.c
+OBJECTS = bitflurry.c database.c filesystem.c
 EFILE   = bitflurry
 
 $(EFILE): $(OBJECTS)

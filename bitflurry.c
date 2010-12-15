@@ -18,16 +18,14 @@ int main (int argc, char *argv[]) {
 			db_getLastIndex(lastIndex);
 			printf("Last - Row: %d, Col: %d\n\n", lastIndex[1], lastIndex[0]);
 		} else if (strcmp(argv[1], "put") == 0) {
-			if (argc < 4) return 1;
-			
-			int length = atoi(argv[3]);
-			
-			putFile(argv[2], length);
-		} else if (strcmp(argv[1], "get") == 0) {
 			if (argc < 3) return 1;
 			
+			putFile(argv[2]);
+		} else if (strcmp(argv[1], "get") == 0) {
+			if (argc < 4) return 1;
+			
 			printf("Retrieving file: %s...\n", argv[2]);
-			getFile(argv[2]);
+			getFile(argv[2], argv[3]);
 		}
 		db_close();
 	}
@@ -63,49 +61,12 @@ int init() {
 	return ret;
 }
 
-void putFile(char *filename, int length) {
+void putFile(char *filename) {
 	if (!init()) return;
-	
-	printf("Inserting File %s with %d chunks...\n", filename, length);
-	
-	int id = 0;
-	id = db_insertFile(filename);
-	printf("Using file_id: %d\n", id);
-	
-	int lastIndex[2];
-	db_getLastIndex(lastIndex);
-	printf("Last - Row: %d, Col: %d\n\n", lastIndex[1], lastIndex[0]);
-	
-	int i;
-	for (i = 0; i < length; i++) {
-		lastIndex[0]++;
-		if (lastIndex[0] >= DISK_TOTAL) { lastIndex[1]++; lastIndex[0] = 0; }
-		
-		if (db_insertChunk(id, lastIndex[0], lastIndex[1], i) != SQLITE_OK) break;
-		
-		printf("Inserted for order: %d at (%d, %d)\n", i, lastIndex[1], lastIndex[0]);
-	}
-	printf("\nDB Insert Completed.\n");
+	fs_putFile(filename);
 }
 
-void getFile(char *filename) {
+void getFile(char *filename, char *outfile) {
 	if (!init()) return;
-	
-	bf_file * file = db_getFile(filename);
-	
-	if (file != NULL) {
-		printf("file_id: %d\n", file->_id);
-		printf("filename: %s\n", file->filename);
-		printf("total chunks: %d\n", file->total_chunks);
-		printf("chunks:\n");
-		int i;
-		for (i = 0; i < file->total_chunks; i++) {
-			printf("\t[%d,%d] %d\n", file->chunks[i].row, file->chunks[i].col, file->chunks[i].order);
-		}
-		
-		free(file);
-	} else {
-		printf("File not found.\n");
-	}
+	fs_getFile(filename, outfile);
 }
-

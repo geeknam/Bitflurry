@@ -3,19 +3,14 @@
 #include <unistd.h>
 
 #include "database.h"
-
-#define DISK_TOTAL 3
-#define DISK_PATH "disks/"
-// our disks
-//	*IMPORTANT* make sure the number of disk below equates to the DISK_TOTAL!!
-char *dirs[] = {"chocolate", "strawberry", "vanilla"};
+#include "filesystem.h"
 
 // initialization
 // 	needs to be run before using any other functions
 int init();
 
 // put file to the filesystem
-void putFile(char *filename, int length);
+void putFile(char *filename);
 
 // get file from the filesystem
-void getFile(char *filename);
+void getFile(char *filename, char *outfile);

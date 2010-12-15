@@ -63,4 +63,5 @@ int db_getLastIndex(int index[]);
 // gets filename from database
 //		return: bf_file
 bf_file* db_getFile(char *filename);
+int toDigit(int number);
 #endif

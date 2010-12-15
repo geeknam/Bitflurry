@@ -103,7 +103,7 @@ int db_getLastIndex(int index[]) {
 	int retval = 0;
 	
 	// default values to return
-	index[0] = 0;
+	index[0] = -1;
 	index[1] = 0;
 	
 	// If db is not opened failed, handle returns NULL

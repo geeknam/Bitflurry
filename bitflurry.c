@@ -1,8 +1,12 @@
 #include "bitflurry.h"
 
 int main (int argc, char *argv[]) {
-	printf("bitflurry\n");
-	printf("(c)2010 FANI FYP Team / Republic Polytechnic\n\n");
+	if (strcmp(argv[3], "-") == 0) { to_stdout = 1; }
+	
+	if (!to_stdout) {
+		printf("bitflurry\n");
+		printf("(c)2010 FANI FYP Team / Republic Polytechnic\n\n");
+	}
 	if (argv[1] == NULL || strcmp(argv[1], "--help") == 0) {
 			printf("Usage: bitflurry <command> <arguments>\n\n");
 			printf("Commands available: \n");
@@ -13,16 +17,17 @@ int main (int argc, char *argv[]) {
 	} else {
 		loadConfig();
 		
-		printf("Total Disks: %d\n", DISK_TOTAL);
-		printf("Disks Mount Point: %s\n", DISK_PATH);
-		printf("Disks Array: \n");
-		int i;
-		for (i = 0; i < DISK_TOTAL; i++) {
-			printf("\t%s,\n", DISK_ARRAY[i]);
+		if (!to_stdout) {
+			printf("Total Disks: %d\n", DISK_TOTAL);
+			printf("Disks Mount Point: %s\n", DISK_PATH);
+			printf("Disks Array: \n");
+			int i;
+			for (i = 0; i < DISK_TOTAL; i++) {
+				printf("\t%s,\n", DISK_ARRAY[i]);
+			}
+			printf("RAID Level: %d\n", DISK_RAID);
+			printf("\n");
 		}
-		printf("RAID Level: %d\n", DISK_RAID);
-		printf("\n");
-		
 		
 		db_open();
 		if (strcmp(argv[1], "init") == 0) {
@@ -108,56 +113,56 @@ void loadConfig() {
 
 int init(int force) {
 	// Do initialization checks
-	printf("Running initializing checks;\n");
+	if (!to_stdout) printf("Running initializing checks;\n");
 	int ret = 0;
 	
-	printf("Checking for database %s...", DB_DATABASE_NAME);
+	if (!to_stdout) printf("Checking for database %s...", DB_DATABASE_NAME);
 	if (access(DB_DATABASE_NAME, W_OK) == 0 && !force) {
-		printf("pass!\n");
+		if (!to_stdout) printf("pass!\n");
         ret = 1;
 	} else {
-		printf("doesn't exist!\n");
-		printf("Creating database...");
+		if (!to_stdout) printf("doesn't exist!\n");
+		if (!to_stdout) printf("Creating database...");
 		if (db_createTable() == SQLITE_OK) {
-			printf("pass!\n");
+			if (!to_stdout) printf("pass!\n");
 			ret = 1;
 		} else {
-			printf("failed!\n");
+			if (!to_stdout) printf("failed!\n");
 			ret = 0;
 		}
 	}
 	
-	printf("Checking for output dirs in %s...", DISK_PATH);
+	if (!to_stdout) printf("Checking for output dirs in %s...", DISK_PATH);
 	DIR *pDir;
 	if ((pDir = opendir(DISK_PATH))) {
-		printf("\n");
+		if (!to_stdout) printf("\n");
 		closedir (pDir);		
         ret = 1;
 
 		int i;
 		for (i = 0; i < DISK_TOTAL; i++) {
-			printf("\t...%s...", DISK_ARRAY[i]);
+			if (!to_stdout) printf("\t...%s...", DISK_ARRAY[i]);
 			char *subdir = malloc((strlen(DISK_PATH) + strlen(DISK_ARRAY[i]) + 2) * sizeof(char));
 			sprintf(subdir, "%s/%s", DISK_PATH, DISK_ARRAY[i]);
 			if (pDir = opendir(subdir)) {
-				printf("pass!\n");
+				if (!to_stdout) printf("pass!\n");
 				closedir (pDir);
 				free(subdir);
 			} else {
-				printf("failed!\n");
+				if (!to_stdout) printf("failed!\n");
 				ret = 0;
 				free(subdir);
 				break;
 			}
 		}
 	} else {
-		printf("doesn't exist!\n");
+		if (!to_stdout) printf("doesn't exist!\n");
 		ret = 0;
 	}
 	
 	if (!ret) printf("Fatal Error: bitflurry will now quit.\n");
-	else printf("ALL OK!\n");
-	printf("\n");
+	else if (!to_stdout) printf("ALL OK!\n");
+	if (!to_stdout) printf("\n");
 	
 	return ret;
 }

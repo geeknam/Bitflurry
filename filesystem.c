@@ -110,8 +110,6 @@ void fs_getFile(char *filename, char *outfile) {
 	char buffer[BUFFER_SIZE];
 	int bytes_read;
 	long bytes_written;
-	
-	int to_stdout = 0;
 
 	int i = 0;
 	
@@ -120,7 +118,7 @@ void fs_getFile(char *filename, char *outfile) {
 	if (file != NULL) {
 		char *chunkfile = NULL;
 		
-		printf("Getting %s...\n", file->filename);
+		if (!to_stdout) printf("Getting %s...\n", file->filename);
 		//printf("file_id: %d\n", file->_id);
 		//printf("filename: %s\n", file->filename);
 		//printf("total chunks: %d\n", file->total_chunks);
@@ -128,7 +126,7 @@ void fs_getFile(char *filename, char *outfile) {
 		
 		FILE *file_out;
 		if (strcmp(outfile, "-") == 0) {
-			printf("Writing to /dev/stdout\n");
+			if (!to_stdout) printf("Writing to /dev/stdout\n");
 			to_stdout = 1;
 			file_out = stdout;
 			//file_out = freopen("/dev/null", "wb", stdout);

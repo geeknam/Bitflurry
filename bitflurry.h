@@ -6,6 +6,8 @@
 #include "database.h"
 #include "filesystem.h"
 
+int to_stdout;
+	
 // initialization
 // 	needs to be run before using any other functions
 int init(int force);

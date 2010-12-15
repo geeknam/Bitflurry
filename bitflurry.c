@@ -12,7 +12,7 @@ int main (int argc, char *argv[]) {
 	} else {
 		db_open();
 		if (strcmp(argv[1], "init") == 0) {
-			init();
+			init(1);
 		} else if (strcmp(argv[1], "sqlitetest") == 0) {
 			int lastIndex[2];
 			db_getLastIndex(lastIndex);
@@ -33,13 +33,13 @@ int main (int argc, char *argv[]) {
 	return 0;
 }
 
-int init() {
+int init(int force) {
 	// Do initialization checks
 	printf("Running initializing checks;\n");
 	int ret = 0;
 	
 	printf("Checking for database %s...", DB_DATABASE_NAME);
-	if (access(DB_DATABASE_NAME, W_OK)) {
+	if (access(DB_DATABASE_NAME, W_OK) == 0 && !force) {
 		printf("pass!\n");
         ret = 1;
 	} else {
@@ -54,6 +54,17 @@ int init() {
 		}
 	}
 	
+	printf("Checking for output dir: %s...", DISK_PATH);
+	DIR *pDir;
+	if ((pDir = opendir(DISK_PATH))) {
+		printf("pass!\n");
+		closedir (pDir);
+        ret = 1;
+	} else {
+		printf("doesn't exist!\n");
+		ret = 0;
+	}
+	
 	if (!ret) printf("Fatal Error: bitflurry will now quit.\n");
 	else printf("ALL TEST PASSED!\n");
 	printf("\n");
@@ -62,11 +73,11 @@ int init() {
 }
 
 void putFile(char *filename) {
-	if (!init()) return;
+	if (!init(0)) return;
 	fs_putFile(filename);
 }
 
 void getFile(char *filename, char *outfile) {
-	if (!init()) return;
+	if (!init(0)) return;
 	fs_getFile(filename, outfile);
 }

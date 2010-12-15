@@ -1,12 +1,12 @@
 #include "bitflurry.h"
 
 int main (int argc, char *argv[]) {
-	if (argv[1] == NULL) {
-			printf("bitflurry\n");
-			printf("(c)2010 FANI FYP Team / Republic Polytechnic\n\n");
+	printf("bitflurry\n");
+	printf("(c)2010 FANI FYP Team / Republic Polytechnic\n\n");
+	if (argv[1] == NULL || strcmp(argv[1], "--help") == 0) {
 			printf("Usage: bitflurry <command> <arguments>\n\n");
 			printf("Commands available: \n");
-			printf("\tinit # must be ran before using the other commands!\n");
+			printf("\tinit # it automatically runs if needed now \n");
 			printf("\tput <filename> <length>\n");
 			printf("\tget <filename> <file1..file2..etc.>\n");
 	} else {
@@ -35,11 +35,37 @@ int main (int argc, char *argv[]) {
 	return 0;
 }
 
-void init() {
-	db_createTable();
+int init() {
+	// Do initialization checks
+	printf("Running initializing checks;\n");
+	int ret = 0;
+	
+	printf("Checking for database %s...", DB_DATABASE_NAME);
+	if (access(DB_DATABASE_NAME, W_OK)) {
+		printf("pass!\n");
+        ret = 1;
+	} else {
+		printf("doesn't exist!\n");
+		printf("Creating database...");
+		if (db_createTable() == SQLITE_OK) {
+			printf("pass!\n");
+			ret = 1;
+		} else {
+			printf("failed!\n");
+			ret = 0;
+		}
+	}
+	
+	if (!ret) printf("Fatal Error: bitflurry will now quit.\n");
+	else printf("ALL TEST PASSED!\n");
+	printf("\n");
+	
+	return ret;
 }
 
 void putFile(char *filename, int length) {
+	if (!init()) return;
+	
 	printf("Inserting File %s with %d chunks...\n", filename, length);
 	
 	int id = 0;
@@ -63,6 +89,8 @@ void putFile(char *filename, int length) {
 }
 
 void getFile(char *filename) {
+	if (!init()) return;
+	
 	bf_file * file = db_getFile(filename);
 	
 	if (file != NULL) {

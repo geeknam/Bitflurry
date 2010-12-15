@@ -7,6 +7,7 @@ int main (int argc, char *argv[]) {
 			printf("Usage: bitflurry <command> <arguments>\n\n");
 			printf("Commands available: \n");
 			printf("\tinit # it automatically runs if needed now \n");
+			printf("\tlist\n");
 			printf("\tput <filename> <length>\n");
 			printf("\tget <filename> <file1..file2..etc.>\n");
 	} else {

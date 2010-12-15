@@ -110,27 +110,37 @@ void fs_getFile(char *filename, char *outfile) {
 	char buffer[BUFFER_SIZE];
 	int bytes_read;
 	long bytes_written;
+	
+	int to_stdout = 0;
 
 	int i = 0;
-	
 	
 	bf_file * file = db_getFile(filename);
 	
 	if (file != NULL) {
-		FILE *file_out = fopen(outfile, "wb");
-		char *chunkfile;
+		char *chunkfile = NULL;
 		
 		printf("Getting %s...\n", file->filename);
-		printf("Writing to %s\n", outfile);
 		//printf("file_id: %d\n", file->_id);
 		//printf("filename: %s\n", file->filename);
 		//printf("total chunks: %d\n", file->total_chunks);
 		//printf("chunks:\n");
 		
-		printf("Progress: 0...");
+		FILE *file_out;
+		if (strcmp(outfile, "-") == 0) {
+			printf("Writing to /dev/stdout\n");
+			to_stdout = 1;
+			file_out = stdout;
+			//file_out = freopen("/dev/null", "wb", stdout);
+		} else {
+			printf("Writing to %s\n", outfile);
+			file_out = fopen(outfile, "wb");
+		}
+		
+		if (!to_stdout) printf("Progress: 0...");
 		int i;
 		for (i = 0; i < file->total_chunks; i++) {
-			//printf("\t[%d,%d] %d\n", file->chunks[i].row, file->chunks[i].col, file->chunks[i].order);
+			//printf("\t[%d,%d] %d\n", file->chunks[i].row, file->chunks[i].col, file->chunks[i].order);//
 			
 			chunkfile = (char *) realloc(chunkfile, (strlen(DISK_PATH) + strlen(DISK_ARRAY[file->chunks[i].col]) + toDigit(file->chunks[i].row) + 3) * sizeof(char));
 			sprintf(chunkfile, "%s/%s/%d", DISK_PATH, DISK_ARRAY[file->chunks[i].col],file->chunks[i].row);
@@ -147,19 +157,20 @@ void fs_getFile(char *filename, char *outfile) {
 			while (bytes_written < file_size) {
 				bytes_read = fread(buffer, 1, BUFFER_SIZE, fp);
 				fwrite(buffer, 1, bytes_read, file_out);					 // write bytes from buffer to the current slice
+				if (to_stdout) fflush(stdout);
 				bytes_written += BUFFER_SIZE;
 			}
 			fclose(fp);
 			
-			printf("%d...", ((i+1)*100)/file->total_chunks);
+			if (!to_stdout) printf("%d...", ((i+1)*100)/file->total_chunks);
 		}
 
-		printf("done!\n");
+		if (!to_stdout) printf("done!\n");
 		free(file);
 		free(chunkfile);
 		fclose(file_out);
 		
-		printf("\nFile transaction completed successfully.\n");
+		if (!to_stdout) printf("\nFile transaction completed successfully.\n");
 	} else {
 		printf("File not found.\n");
 	}

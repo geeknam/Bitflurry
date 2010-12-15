@@ -10,6 +10,10 @@
 // 	needs to be run before using any other functions
 int init(int force);
 
+// load config from CONFIG_FILE
+//	*MUST BE DONE BEFORE INIT*
+void loadConfig();
+
 // put file to the filesystem
 void putFile(char *filename);
 

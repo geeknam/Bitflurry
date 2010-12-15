@@ -1,8 +1,5 @@
 #include "filesystem.h"
 
-// our mounts hardcoded for now
-char *dirs[] = {"chocolate", "strawberry", "vanilla"};
-
 /* Get size in bytes of the specified file */
 long fs_getFileSize(char *filename){
     struct stat statBuffer;
@@ -63,9 +60,9 @@ void fs_putFile(char *filename) {
 	printf("Progress: 0...");
 	for (slice_index = 0; slice_index <= num_slices; slice_index++) {
 		// allocate memory for the name of the output files
-		file_out = (char *) realloc(file_out, (strlen(DISK_PATH) + strlen(dirs[dir_index]) + toDigit(lastIndex[1]) + 3) * sizeof(char));    //sizeof(char) = 1 byte
+		file_out = (char *) realloc(file_out, (strlen(DISK_PATH) + strlen(DISK_ARRAY[dir_index]) + toDigit(lastIndex[1]) + 3) * sizeof(char));    //sizeof(char) = 1 byte
 
-		sprintf (file_out, "%s/%s/%d", DISK_PATH, dirs[dir_index], lastIndex[1]);  //concatenate names for the new output: movie.mp4.1 , movie.mp4.2, ...
+		sprintf (file_out, "%s/%s/%d", DISK_PATH, DISK_ARRAY[dir_index], lastIndex[1]);  //concatenate names for the new output: movie.mp4.1 , movie.mp4.2, ...
 		fp_out = fopen(file_out, "wb");						   // create and open a output file
 		if (fp_out == NULL) {
 			printf("Fatal error: Perhaps the storage doesn't exist or bitflurry has no write permission.");
@@ -135,8 +132,8 @@ void fs_getFile(char *filename, char *outfile) {
 		for (i = 0; i < file->total_chunks; i++) {
 			//printf("\t[%d,%d] %d\n", file->chunks[i].row, file->chunks[i].col, file->chunks[i].order);
 			
-			chunkfile = (char *) realloc(chunkfile, (strlen(DISK_PATH) + strlen(dirs[file->chunks[i].col]) + toDigit(file->chunks[i].row) + 3) * sizeof(char));
-			sprintf(chunkfile, "%s/%s/%d", DISK_PATH, dirs[file->chunks[i].col],file->chunks[i].row);
+			chunkfile = (char *) realloc(chunkfile, (strlen(DISK_PATH) + strlen(DISK_ARRAY[file->chunks[i].col]) + toDigit(file->chunks[i].row) + 3) * sizeof(char));
+			sprintf(chunkfile, "%s/%s/%d", DISK_PATH, DISK_ARRAY[file->chunks[i].col],file->chunks[i].row);
 			
 			FILE *fp = fopen(chunkfile, "rb");
 			if (fp != NULL) {

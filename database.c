@@ -308,6 +308,126 @@ bf_file* db_getFile(char *filename) {
 	return file;
 }
 
+void db_getFileList(bf_file** files, int* total) {
+	int retval = 0;
+	
+	// If db is not opened failed, handle returns NULL
+    if (db_opened == 0)
+    {
+        printf("DB Error: Database connection not opened.\n");
+        return;
+    }
+
+	// Construct our query
+	//		- Count the number of expected results to create our array
+	// Self explanatory codes from here on...
+	retval = sqlite3_prepare_v2(db_handle, "SELECT COUNT(*) FROM files", -1, &db_stmt, 0);
+	if (retval)
+	{
+	    printf("DB: Unknown error while retrieving data.\n");
+	    return;
+	}
+
+	// Read the number of rows fetched
+	int cols = sqlite3_column_count(db_stmt);
+
+	while (1)
+	{
+	    // fetch a row's status
+	    retval = sqlite3_step(db_stmt);
+
+	    if (retval == SQLITE_ROW)
+	    {
+	        // SQLITE_ROW means fetched a row
+
+	        int col;
+			for(col = 0; col < cols; col++)
+	        {
+				const char *col_name = sqlite3_column_name(db_stmt, col);
+	            int val = sqlite3_column_int(db_stmt, col);
+	            //printf("%s = %d\t", sqlite3_column_name(db_stmt, col), val);
+
+				*total = val;
+	        }
+			//printf("\n");
+	    }
+	    else if(retval == SQLITE_DONE)
+	    {
+	        // All rows finished
+	        //printf("DB: All rows fetched.\n");
+	        break;
+	    }
+	    else
+	    {
+	        // Some error encountered
+	        printf("DB: Unknown error while retrieving data.\n");
+	        return;
+	    }
+	}
+	
+	// Second query
+	//		- Get the real data
+	// Self explanatory codes from here on...
+	retval = sqlite3_prepare_v2(db_handle, "SELECT * FROM files", -1, &db_stmt, 0);
+	if (retval)
+	{
+	    printf("DB: Unknown error while retrieving data.\n");
+	    return;
+	}
+
+	// Read the number of rows fetched
+	cols = sqlite3_column_count(db_stmt);
+	
+	bf_file** file_list = malloc(*total * sizeof(int));
+	int i = 0;
+
+	while (1)
+	{
+	    // fetch a row's status
+	    retval = sqlite3_step(db_stmt);
+
+	    if (retval == SQLITE_ROW)
+	    {
+	        // SQLITE_ROW means fetched a row
+
+			bf_file *file = malloc(sizeof(bf_file));
+			
+	        int col;
+			for(col = 0; col < cols; col++)
+	        {
+				const char *col_name = sqlite3_column_name(db_stmt, col);
+	            
+	            printf("%s = %s\t", sqlite3_column_name(db_stmt, col), sqlite3_column_text(db_stmt, col));
+
+				if (strcmp(col_name, "_id") == 0) {
+					file->_id = sqlite3_column_int(db_stmt, col);
+				} else if (strcmp(col_name, "filename") == 0) {
+					strcpy(file->filename, sqlite3_column_text(db_stmt, col));
+				}
+	        }
+	
+			file_list[i] = file;
+			i++;
+			printf("\n");
+	    }
+	    else if(retval == SQLITE_DONE)
+	    {
+	        // All rows finished
+	        //printf("DB: All rows fetched.\n");
+			files = file_list;
+	        break;
+	    }
+	    else
+	    {
+	        // Some error encountered
+	        printf("DB: Unknown error while retrieving data.\n");
+	        return;
+	    }
+	}
+	
+	return;
+}
+
 int db_isFileExist(char *filename) {
 	int retval = 0;
 	int existence = 0;

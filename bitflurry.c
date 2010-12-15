@@ -10,8 +10,6 @@ int main (int argc, char *argv[]) {
 			printf("\tput <filename> <length>\n");
 			printf("\tget <filename> <file1..file2..etc.>\n");
 	} else {
-		db_open();
-		
 		loadConfig();
 		
 		printf("Total Disks: %d\n", DISK_TOTAL);
@@ -24,6 +22,8 @@ int main (int argc, char *argv[]) {
 		printf("RAID Level: %d\n", DISK_RAID);
 		printf("\n");
 		
+		
+		db_open();
 		if (strcmp(argv[1], "init") == 0) {
 			init(1);
 		} else if (strcmp(argv[1], "sqlitetest") == 0) {
@@ -42,6 +42,21 @@ int main (int argc, char *argv[]) {
 				printf("Setting value of %s to %s.\n", argv[2], argv[3]);
 				cfg_setValueForKey(argv[2], argv[3]);
 			}
+		} else if (strcmp(argv[1], "list") == 0) {
+			printf("Files in database: \n");
+			bf_file** files = NULL;
+			int max = 0;
+			db_getFileList(files, &max);
+			if (files == NULL) return;
+			
+			printf("Max: %d\n", max);
+			
+			int i;
+			for (i = 0; i < max; i++) {
+				printf("\t- %s\n", files[i]->filename);
+				i++;
+			}
+			printf("\n");
 		} else if (strcmp(argv[1], "put") == 0) {
 			if (argc < 3) return 1;
 			

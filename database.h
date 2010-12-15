@@ -64,6 +64,10 @@ int db_getLastIndex(int index[]);
 //		return: bf_file
 bf_file* db_getFile(char *filename);
 
+// gets the current files from the database
+//		return: bf_file[]
+void db_getFileList(bf_file** files, int* total);
+
 // check if file exist
 //		return: -1, 0 or 1
 int db_isFileExist(char *filename);

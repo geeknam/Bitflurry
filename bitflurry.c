@@ -24,7 +24,6 @@ int main (int argc, char *argv[]) {
 		} else if (strcmp(argv[1], "get") == 0) {
 			if (argc < 4) return 1;
 			
-			printf("Retrieving file: %s...\n", argv[2]);
 			getFile(argv[2], argv[3]);
 		}
 		db_close();

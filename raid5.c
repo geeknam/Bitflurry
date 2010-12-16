@@ -87,9 +87,10 @@ void raid5_putFile(char *filename) {
 					
 					// Write file
 					// allocate memory for the name of the output files
-					file_out = (char *) realloc(file_out, (strlen(DISK_PATH) + strlen(DISK_ARRAY[column_index]) + toDigit(row_index) + 3) * sizeof(char));    //sizeof(char) = 1 byte
+					int name_mem = (strlen(DISK_PATH) + strlen(DISK_ARRAY[column_index]) + toDigit(row_index) + 5) * sizeof(char);
+					file_out = (char *) realloc(file_out, name_mem);    //sizeof(char) = 1 byte
 
-					sprintf (file_out, "%s/%s/%d", DISK_PATH, DISK_ARRAY[column_index], row_index);  //concatenate names for the new output: movie.mp4.1 , movie.mp4.2, ...
+					snprintf (file_out, name_mem, "%s/%s/%d", DISK_PATH, DISK_ARRAY[column_index], row_index);  //concatenate names for the new output: movie.mp4.1 , movie.mp4.2, ...
 					fp_out = fopen(file_out, "wb");						   // create and open a output file
 					
 					while (bytes_written < cur_slice_size) {

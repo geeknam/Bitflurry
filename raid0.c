@@ -53,9 +53,10 @@ void raid0_putFile(char *filename) {
 		//printf("Writing on [%d, %d]\n", lastIndex[1], lastIndex[0]);
 		
 		// allocate memory for the name of the output files
-		file_out = (char *) realloc(file_out, (strlen(DISK_PATH) + strlen(DISK_ARRAY[lastIndex[0]]) + toDigit(lastIndex[1]) + 3) * sizeof(char));    //sizeof(char) = 1 byte
+		int name_mem = (strlen(DISK_PATH) + strlen(DISK_ARRAY[lastIndex[0]]) + toDigit(lastIndex[1]) + 5) * sizeof(char);
+		file_out = (char *) realloc(file_out, name_mem);    //sizeof(char) = 1 byte
 
-		sprintf (file_out, "%s/%s/%d", DISK_PATH, DISK_ARRAY[lastIndex[0]], lastIndex[1]);  //concatenate names for the new output: movie.mp4.1 , movie.mp4.2, ...
+		snprintf (file_out, name_mem, "%s/%s/%d", DISK_PATH, DISK_ARRAY[lastIndex[0]], lastIndex[1]);  //concatenate names for the new output: movie.mp4.1 , movie.mp4.2, ...
 		fp_out = fopen(file_out, "wb");						   // create and open a output file
 		if (fp_out == NULL) {
 			printf("Fatal error: Perhaps the storage doesn't exist or bitflurry has no write permission.");

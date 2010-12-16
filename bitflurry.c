@@ -3,11 +3,11 @@
 int main (int argc, char *argv[]) {
 
 	// Quiet output so that we do not corrupt stdout get
-	if (argv[1] != NULL && argv[3] != NULL) {
-		if (strcmp(argv[1], "get") && strcmp(argv[3], "-") == 0) {
-			to_stdout = 1;
-		}
-	}
+	    if (argv[3] != NULL) {
+             if (strcmp(argv[3], "-") == 0) {
+                     to_stdout = 1;
+             }
+     }
 	
 	if (!to_stdout) {
 		printf("bitflurry\n");

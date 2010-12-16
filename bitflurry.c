@@ -1,7 +1,13 @@
 #include "bitflurry.h"
 
 int main (int argc, char *argv[]) {
-	if (strcmp(argv[3], "-") == 0) { to_stdout = 1; }
+
+	// Quiet output so that we do not corrupt stdout get
+	if (strcmp(argv[1], "get") == 0) {
+		if (strcmp(argv[3], "-") == 0) {
+			to_stdout = 1;
+		}
+	}
 	
 	if (!to_stdout) {
 		printf("bitflurry\n");
@@ -64,8 +70,7 @@ int main (int argc, char *argv[]) {
 			}
 			printf("\n");
 		} else if (strcmp(argv[1], "put") == 0) {
-			if (argc < 3) return 1;
-			
+			if (argc < 2) return 1;
 			putFile(argv[2]);
 		} else if (strcmp(argv[1], "get") == 0) {
 			if (argc < 4) return 1;

@@ -59,7 +59,7 @@ void fs_putFile(char *filename) {
 	for (slice_index = 0; slice_index <= num_slices; slice_index++) {
 		lastIndex[0]++;
 		if (lastIndex[0] >= DISK_TOTAL) { lastIndex[1]++; lastIndex[0] = 0; }
-		printf("Writing on [%d, %d]\n", lastIndex[1], lastIndex[0]);
+		//printf("Writing on [%d, %d]\n", lastIndex[1], lastIndex[0]);
 		
 		// allocate memory for the name of the output files
 		file_out = (char *) realloc(file_out, (strlen(DISK_PATH) + strlen(DISK_ARRAY[lastIndex[0]]) + toDigit(lastIndex[1]) + 3) * sizeof(char));    //sizeof(char) = 1 byte

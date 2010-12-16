@@ -19,6 +19,10 @@ void raid5_putFile(char *filename) {
 	int bytes_to_write;
 	long bytes_written;
 	
+	char * stmt = NULL;
+	stmt = malloc(sizeof(char) + 1);
+	//stmt = ";";
+	
 	// File size and number of slices
 	file_size = fs_getFileSize(filename);					// Get size of the file
 	int num_slices = file_size / slice_size;
@@ -103,9 +107,14 @@ void raid5_putFile(char *filename) {
 					bytes_written = 0;
 					
 					slice_iterator++;
-					if (db_insertChunk(id, column_index, row_index, slice_iterator) != SQLITE_OK) break;
+					if (db_insertChunk_cacheStatement(stmt, id, column_index, row_index, slice_iterator) < 1) break;
 				}
+				fflush(stdout);
 			}
+		}
+		
+		if (db_insertChunk_cacheCommit(stmt) != SQLITE_OK) {
+			printf("Fatal error: Unable to commit chunk to database.");
 		}
 					
 		printf("\n");

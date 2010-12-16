@@ -54,6 +54,9 @@ int db_insertFile(char *filename);
 //		returns: sqlite3 return codes
 int db_insertChunk(int file_id, int col, int row, int order);
 
+int db_insertChunk_cacheStatement(char * stmt, int file_id, int col, int row, int order);
+int db_insertChunk_cacheCommit(char * stmt);
+
 // gets the last index of the chunks table
 // 		index[0] - col
 //		index[1] - row

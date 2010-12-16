@@ -116,9 +116,9 @@ void raid5_putFile(char *filename) {
 		printf("\n");
 	}
 	
-	/*if (db_insertChunk_cacheCommit(stmt) != SQLITE_OK) {
+	if (db_insertChunk_cacheCommit(stmt) != SQLITE_OK) {
 		printf("Fatal error: Unable to commit chunk to database.");
-	}*/
+	}
 		
 	raid5_reParity(start_row, end_row);
 	printf("done!\n");

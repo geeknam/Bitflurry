@@ -103,13 +103,15 @@ int db_insertChunk_cacheStatement(char **stmt, int file_id, int col, int row, in
 	if (stmt_tmp == NULL) return -1;
 	strcpy(stmt_tmp, *stmt);
 	
-	printf("STMT Query: %s\n", *stmt);
+	//printf("STMT Query: %s\n", *stmt);
 	
-	*stmt = (char *) realloc(*stmt, (strlen(*stmt) + 32 + toDigit(file_id) + toDigit(col) + toDigit(row) + toDigit(order) + 1) * sizeof(char));
+	int stmt_mem = (strlen(*stmt) + 35 + toDigit(file_id) + toDigit(col) + toDigit(row) + toDigit(order) + 1) * sizeof(char);
+	
+	*stmt = (char *) realloc(*stmt, stmt_mem);
 	if (*stmt == NULL) return -1;
-	sprintf(*stmt, "%sINSERT INTO chunks VALUES (%d, %d, %d, %d);", stmt_tmp, col, row, file_id, order);
+	snprintf(*stmt, stmt_mem, "%sINSERT INTO chunks VALUES (%d, %d, %d, %d);", stmt_tmp, col, row, file_id, order);
 	
-	printf("STMT Final Query: %s\n", *stmt);
+	//printf("STMT Final Query: %s\n", *stmt);
 	
 	free(stmt_tmp);
 	return 1;
@@ -119,7 +121,7 @@ int db_insertChunk_cacheCommit(char * stmt) {
 	int retval = 0;
 	char *zErrMsg = NULL;
 	
-	printf("Insert Query: %s\n", stmt);
+	//printf("Insert Query: %s\n", stmt);
 	retval = sqlite3_exec(db_handle, stmt, 0, 0, &zErrMsg);
 	if (retval != SQLITE_OK) {
 		printf("DB Error: Failed to insert data to table. SQL Error: %s\n", zErrMsg);

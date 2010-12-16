@@ -3,8 +3,8 @@
 int main (int argc, char *argv[]) {
 
 	// Quiet output so that we do not corrupt stdout get
-	if (strcmp(argv[1], "get") == 0) {
-		if (strcmp(argv[3], "-") == 0) {
+	if (argv[1] != NULL && argv[3] != NULL) {
+		if (strcmp(argv[1], "get") && strcmp(argv[3], "-") == 0) {
 			to_stdout = 1;
 		}
 	}
@@ -16,10 +16,10 @@ int main (int argc, char *argv[]) {
 	if (argv[1] == NULL || strcmp(argv[1], "--help") == 0) {
 			printf("Usage: bitflurry <command> <arguments>\n\n");
 			printf("Commands available: \n");
-			printf("\tinit # it automatically runs if needed now \n");
-			printf("\tlist\n");
-			printf("\tput <filename> <length>\n");
-			printf("\tget <filename> <file1..file2..etc.>\n");
+			printf("\tinit\t\t\t\tRe-creates the filesystem database\n");
+			printf("\tlist\t\t\t\tList files in the filesystem database\n");
+			printf("\tput <filename>\t\t\tStripe a file into the filesystem\n");
+			printf("\tget <filename> <output file>\tReconstruct a striped file\n");
 	} else {
 		loadConfig();
 		

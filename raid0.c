@@ -19,8 +19,8 @@ void raid0_putFile(char *filename) {
 	long bytes_written;
 	
 	char * stmt = NULL;
-	stmt = malloc(sizeof(char) + 1);
-	//stmt = ";";
+	stmt = malloc(sizeof(char));
+	memset(stmt, 0, sizeof(char));
 
 	file_size = fs_getFileSize(filename);						// get a size of the file
 	num_slices = file_size/slice_size;							// number of slices

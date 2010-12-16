@@ -101,7 +101,8 @@ int db_insertChunk_cacheStatement(char **stmt, int file_id, int col, int row, in
 	char *stmt_tmp = NULL;
 	stmt_tmp = malloc((strlen(*stmt) + 1) * sizeof(char));
 	if (stmt_tmp == NULL) return -1;
-	strcpy(stmt_tmp, *stmt);
+	//strcpy(stmt_tmp, *stmt);
+	memcpy(stmt_tmp, *stmt, (strlen(*stmt) + 1) * sizeof(char));
 	
 	//printf("STMT Query: %s\n", *stmt);
 	

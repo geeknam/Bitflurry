@@ -22,8 +22,9 @@ void raid5_putFile(char *filename) {
 	long bytes_written;
 	
 	char * stmt = NULL;
-	stmt = malloc(sizeof(char) + 1);
-	//stmt = ";";
+	stmt = malloc(sizeof(char));
+	memset(stmt, 0, sizeof(char));
+	//stmt[0] = "";
 	
 	// File size and number of slices
 	file_size = fs_getFileSize(filename);					// Get size of the file

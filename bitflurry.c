@@ -174,10 +174,10 @@ int init(int force) {
 
 void putFile(char *filename) {
 	if (!init(0)) return;
-	fs_putFile(filename);
+	fs_putFile(filename, DISK_RAID);
 }
 
 void getFile(char *filename, char *outfile) {
 	if (!init(0)) return;
-	fs_getFile(filename, outfile);
+	fs_getFile(filename, DISK_RAID, outfile);
 }

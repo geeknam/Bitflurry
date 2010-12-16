@@ -87,7 +87,7 @@ void raid0_putFile(char *filename) {
 	free(file_out);			// free the memory
 }
 
-void raid0_getFile(struct bf_file *file, char *outfile) {
+void raid0_getFile(bf_file** file, char *outfile) {
 
 	char buffer[BUFFER_SIZE];
 	int bytes_read;

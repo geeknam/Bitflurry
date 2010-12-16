@@ -209,8 +209,9 @@ void raid5_reParity(int start_row, int end_row) {
 		// Read buffer by buffer
 		long parity_index;
 		for (parity_index = 0; parity_index < CHUNK_SIZE; parity_index += BUFFER_SIZE) {
+			memset(parity_buffer, 0, sizeof(parity_buffer));
 			for (column_index = 0; column_index < DISK_TOTAL; column_index++) {
-				printf("Column: %d, Parity: %d\n", column_index, parity_index);
+				printf("Column: %d, Parity At: %d, Parity Byte: %d\n", column_index, parity_at, parity_index);
 				if (column_index != parity_at) {
 					printf("\t...processing...");
 					if (fp[column_index] == NULL) continue;
@@ -220,8 +221,9 @@ void raid5_reParity(int start_row, int end_row) {
 						parity_buffer[buffer_at] = parity_buffer[buffer_at] ^ buffer[buffer_at];
 					}
 				} else {
-                                        printf("\t...skipped...");
-                                }
+					printf("\t...skipped...");
+				}
+				printf("\n");
 			}
 			// Write the calcuated parity back to parity file handle
 			fwrite(parity_buffer, 1, BUFFER_SIZE, fp[parity_at]);

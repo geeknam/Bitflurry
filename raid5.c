@@ -197,6 +197,8 @@ void raid5_reParity(int start_row, int end_row) {
 			chunkfile = (char *) realloc(chunkfile, (strlen(DISK_PATH) + strlen(DISK_ARRAY[column_index]) + toDigit(row_index) + 3) * sizeof(char));
 			sprintf(chunkfile, "%s/%s/%d", DISK_PATH, DISK_ARRAY[column_index], row_index);
 			
+			printf("Chunk File is at %s\n.", chunkfile);
+			
 			if (column_index == parity_at) {
 				fp[column_index] = fopen(chunkfile, "wb");
 			} else {
@@ -204,12 +206,18 @@ void raid5_reParity(int start_row, int end_row) {
 			}
 		}
 
+		printf("All files opened.\n");
+
 		// Read buffer by buffer
 		long parity_index;
 		for (parity_index = 0; parity_index < CHUNK_SIZE; parity_index += BUFFER_SIZE) {
+			printf("Parity: %d.. ", parity_index);
 			for (column_index = 0; column_index < DISK_TOTAL; column_index++) {
+				printf("Column: %d\n", column_index);
 				if (column_index != parity_at) {
-					if (fp[column_index] = NULL) continue;
+					printf("Processing...");
+					if (fp[column_index] == NULL) continue;
+					printf("File: %s\n", fp[column_index]);
 					fread(buffer, 1, BUFFER_SIZE, fp[column_index]);
 					// Loop over buffer and perform byte XOR
 					for (buffer_at = 0; buffer_at < BUFFER_SIZE; buffer_at++) {

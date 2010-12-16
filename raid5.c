@@ -206,24 +206,22 @@ void raid5_reParity(int start_row, int end_row) {
 			}
 		}
 
-		printf("All files opened.\n");
-
 		// Read buffer by buffer
 		long parity_index;
 		for (parity_index = 0; parity_index < CHUNK_SIZE; parity_index += BUFFER_SIZE) {
-			printf("Parity: %d.. ", parity_index);
 			for (column_index = 0; column_index < DISK_TOTAL; column_index++) {
-				printf("Column: %d\n", column_index);
+				printf("Column: %d, Parity: %d\n", column_index, parity_index);
 				if (column_index != parity_at) {
-					printf("Processing...");
+					printf("\t...processing...");
 					if (fp[column_index] == NULL) continue;
-					printf("File: %s\n", fp[column_index]);
 					fread(buffer, 1, BUFFER_SIZE, fp[column_index]);
 					// Loop over buffer and perform byte XOR
 					for (buffer_at = 0; buffer_at < BUFFER_SIZE; buffer_at++) {
 						parity_buffer[buffer_at] = parity_buffer[buffer_at] ^ buffer[buffer_at];
 					}
-				}
+				} else {
+                                        printf("\t...skipped...");
+                                }
 			}
 			// Write the calcuated parity back to parity file handle
 			fwrite(parity_buffer, 1, BUFFER_SIZE, fp[parity_at]);

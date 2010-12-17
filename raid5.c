@@ -73,7 +73,7 @@ void raid5_putFile(char *filename) {
 				//file_out = (char *) realloc(file_out, (strlen(DISK_PATH) + strlen(DISK_ARRAY[lastIndex[0]]) + toDigit(lastIndex[1]) + 3) * sizeof(char));
 				//sprintf(file_out, "%s/%s/%d", DISK_PATH, DISK_ARRAY[lastIndex[0]], lastIndex[1]);  //concatenate names for the new output: movie.mp4.1
 				printf("%d\t", cur_row * data_cols + disk_col);
-				//if (db_insertChunk(id, lastIndex[0], lastIndex[1], cur_row * data_cols + disk_col) != SQLITE_OK) break;
+				if (db_insertChunk(id, lastIndex[0], lastIndex[1], cur_row * data_cols + disk_col) != SQLITE_OK) break;
 			} else {
 				printf("P\t");
 			}

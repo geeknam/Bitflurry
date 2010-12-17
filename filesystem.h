@@ -19,6 +19,11 @@
 #include "raid5.h"
 #include "raid6.h"
 
+int DISK_TOTAL;
+char DISK_PATH[50];
+int DISK_RAID;
+char **DISK_ARRAY;
+
 long fs_getFileSize(char *filename);
 void fs_putFile(char *filename, int raidLevel);
 void fs_getFile(char *filename, int raidLevel, char *outfile);

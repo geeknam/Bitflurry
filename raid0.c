@@ -87,13 +87,11 @@ void raid0_putFile(char *filename) {
 	free(file_out);			// free the memory
 }
 
-void raid0_getFile(bf_file** file, char *outfile) {
+void raid0_getFile(bf_file* file, char *outfile) {
 
 	char buffer[BUFFER_SIZE];
 	int bytes_read;
 	long bytes_written;
-
-	int i = 0;
 
 	char *chunkfile = NULL;
 	

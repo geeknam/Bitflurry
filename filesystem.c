@@ -13,8 +13,8 @@ long fs_getFileSize(char *filename){
 }
 
 // split file into chunk and put them in our storage arrays
-void fs_putFile(char *filename, int *raidLevel) {
-	switch (*raidLevel) {
+void fs_putFile(char *filename, int raidLevel) {
+	switch (raidLevel) {
 		case 0:
 			raid0_putFile(filename);
 			break;
@@ -27,7 +27,7 @@ void fs_putFile(char *filename, int *raidLevel) {
 }
 
 
-void fs_getFile(char *filename, int *raidLevel, char *outfile) {
+void fs_getFile(char *filename, int raidLevel, char *outfile) {
 	
 	bf_file * file = db_getFile(filename);
 	
@@ -35,7 +35,7 @@ void fs_getFile(char *filename, int *raidLevel, char *outfile) {
 		printf("File not found.\n");
 	} else {
 
-		switch (*raidLevel) {
+		switch (raidLevel) {
 			case 0:
 				raid0_getFile(&file, outfile);
 				break;
@@ -46,4 +46,5 @@ void fs_getFile(char *filename, int *raidLevel, char *outfile) {
 				printf("No RAID level specified. Cannot continue.");
 		}
 	}
+
 }

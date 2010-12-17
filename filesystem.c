@@ -21,6 +21,9 @@ void fs_putFile(char *filename, int raidLevel) {
 		case 5:
 			raid5_putFile(filename);
 			break;
+		case 6:
+			raid6_putFile(filename);
+			break;
 		default:
 			printf("No RAID level specified. Cannot continue.");
 	}
@@ -41,6 +44,9 @@ void fs_getFile(char *filename, int raidLevel, char *outfile) {
 				break;
 			case 5:
 				raid5_getFile(file, outfile);
+				break;
+			case 6:
+				raid6_getFile(file, outfile);
 				break;
 			default:
 				printf("No RAID level specified. Cannot continue.");

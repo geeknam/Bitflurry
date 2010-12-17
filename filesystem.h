@@ -17,6 +17,7 @@
 
 #include "raid0.h"
 #include "raid5.h"
+#include "raid6.h"
 
 long fs_getFileSize(char *filename);
 void fs_putFile(char *filename, int raidLevel);

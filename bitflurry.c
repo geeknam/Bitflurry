@@ -111,19 +111,19 @@ void loadConfig() {
 	cfg_getValueForKey("DISK_RAID", &disk_raid);
 	DISK_RAID = atoi(disk_raid);
 	
-	char disk_array[50] = "";
+	char disk_array[128] = "";
 	cfg_getValueForKey("DISK_ARRAY", &disk_array);
 	
 	// 'explode' the config value and put it into array
 	char *disk = NULL;
-	DISK_ARRAY = malloc(DISK_TOTAL * sizeof(int));
+	//DISK_ARRAY = malloc(DISK_TOTAL * sizeof(int));
 	if (DISK_ARRAY == NULL) return;
 	disk = strtok(disk_array, ",");
 	int i = 0;
 	while (disk != NULL) {
-		char *_disk = malloc((strlen(disk)+1) * sizeof(char));
-		strcpy(_disk, disk);
-		DISK_ARRAY[i] = _disk;
+		//char *_disk = malloc((strlen(disk)+1) * sizeof(char));
+		strncpy(DISK_ARRAY[i], disk, (strlen(disk)+1));
+		//DISK_ARRAY[i] = _disk;
 		disk = strtok(NULL, ",");
 		i++;
 	}

@@ -1,9 +1,9 @@
 #include "config.h"
 
 void cfg_getValueForKey(char *key, char *val) {
-	// Assume our key+value is not more than 100 characters
-	char lineStr[100];
-	char aText[50], bText[50];
+	// Assume our key+value is not more than 256 characters
+	char lineStr[256];
+	char aText[128], bText[128];
 
 	FILE *conFile; 
 
@@ -17,7 +17,7 @@ void cfg_getValueForKey(char *key, char *val) {
 		}
 
 		// gets text line by line and stores in string
-		while (fgets(lineStr, 100, conFile) != NULL) {
+		while (fgets(lineStr, 256, conFile) != NULL) {
 			// skip lines starting with '#'
 			if(lineStr[0] == '#') {
 			    continue;
@@ -43,9 +43,9 @@ void cfg_getValueForKey(char *key, char *val) {
 
 int cfg_setValueForKey(char *key, char *val) {
 	// Assume our key+value is not more than 100 characters
-	char lineStr[100];
-	char tmpStr[100];
-	char aText[50], bText[50];
+	char lineStr[256];
+	char tmpStr[256];
+	char aText[128], bText[128];
 
 	FILE *tmpFile;
 	FILE *conFile; 
@@ -63,7 +63,7 @@ int cfg_setValueForKey(char *key, char *val) {
 		}
 
 		// gets text line by line and stores in string
-		while (fgets(lineStr, 100, conFile) != NULL) {
+		while (fgets(lineStr, 256, conFile) != NULL) {
 			// skip lines starting with '#'
 			if(lineStr[0] == '#') {
 			    fputs(lineStr, tmpFile);
@@ -100,7 +100,7 @@ int cfg_setValueForKey(char *key, char *val) {
 			rewind(tmpFile);
 
 			//  gets text line by line and stores in string
-			while (fgets(lineStr, 100, tmpFile) != NULL) {
+			while (fgets(lineStr, 256, tmpFile) != NULL) {
 				// writes from temporary file to text file
 				fputs(lineStr, conFile);
 			}

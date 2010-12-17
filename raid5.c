@@ -33,7 +33,7 @@ void raid5_putFile(char *filename) {
 	int lastIndex[2];
 	db_getLastIndex(lastIndex);
 	
-	start_row = lastIndex[1] + 1;
+	start_row = lastIndex[1];
 	
 	// num_slices = file_size / slice_size;		// Number of slices
 	// last_slice_index = num_slices + 1;						// index of the last slice

@@ -33,7 +33,7 @@ void raid5_putFile(char *filename) {
 	int lastIndex[2];
 	db_getLastIndex(lastIndex);
 	
-	start_row = lastIndex[1] + 1;
+	start_row = lastIndex[1];
 	
 	// num_slices = file_size / slice_size;		// Number of slices
 	// last_slice_index = num_slices + 1;						// index of the last slice
@@ -61,7 +61,7 @@ void raid5_putFile(char *filename) {
 	int cur_col;
 	for (cur_row = 0; cur_row < num_rows; cur_row++) {
 
-		parity_col = (data_cols) - ((start_row + cur_row) % (data_cols + 1));	// Calculate parity column
+		parity_col = (data_cols) - ((start_row + cur_row + 1) % (data_cols + 1));	// Calculate parity column
 
 		for (cur_col = 0; cur_col < data_cols + 1; cur_col++) {
 		

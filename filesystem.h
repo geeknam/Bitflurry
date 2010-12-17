@@ -22,5 +22,6 @@
 long fs_getFileSize(char *filename);
 void fs_putFile(char *filename, int raidLevel);
 void fs_getFile(char *filename, int raidLevel, char *outfile);
+void fs_fsck(int raidLevel);
 
 #endif

@@ -32,6 +32,7 @@ int main (int argc, char *argv[]) {
 			printf("\tlist\t\t\t\tList files in the filesystem database\n");
 			printf("\tput <filename>\t\t\tStripe a file into the filesystem\n");
 			printf("\tget <filename> <output file>\tReconstruct a striped file\n");
+			printf("\tfsck\t\t\t\tVerify RAID integrity\n");
 	} else {
 		loadConfig();
 		
@@ -88,6 +89,8 @@ int main (int argc, char *argv[]) {
 			if (argc < 4) return 1;
 			
 			getFile(argv[2], argv[3]);
+		} else if (strcmp(argv[1], "fsck") == 0) {
+			fsck();
 		}
 		db_close();
 	}
@@ -192,4 +195,9 @@ void putFile(char *filename) {
 void getFile(char *filename, char *outfile) {
 	if (!init(0)) return;
 	fs_getFile(filename, DISK_RAID, outfile);
+}
+
+void fsck() {
+	if (!init(0)) return;
+	fs_fsck(DISK_RAID);
 }

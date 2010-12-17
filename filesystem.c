@@ -54,3 +54,16 @@ void fs_getFile(char *filename, int raidLevel, char *outfile) {
 	}
 
 }
+
+void fs_fsck(int raidLevel) {
+	switch (raidLevel) {
+		case 0:
+			raid0_fsck();
+			break;
+		case 5:
+			raid5_fsck();
+			break;
+		default:
+			printf("No RAID level specified. Cannot continue.");
+	}
+}

@@ -4,10 +4,23 @@
 set_time_limit(0);
 $media = $_GET['f'];
 
-if (!$media || $media == "") die("Specify a filename");
+$ext = substr($media, strrpos($media, '.') + 1);
+$content_type = NULL;
 
-header("Content-type: video/x-msvideo");
-//header("Content-type: audio/mp3");
+switch ($ext) {
+    case "avi":
+        $content_type = "video/x-msvideo";
+        break;
+    case "mp3":
+        $content_type = "audio/mp3";
+        break;
+}
+
+
+if (!$media || $media == "") die("Specify a filename");
+if (!isset($content_type)) die("File format not supported");
+
+header("Content-type: ".$content_type);
 
 chdir("/root/FYP");
 $media = str_replace(" ", "\ ", $media);

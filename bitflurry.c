@@ -57,7 +57,7 @@ int main (int argc, char *argv[]) {
 		} else if (strcmp(argv[1], "conftest") == 0) {
 			if (argc < 3) return 1;
 			
-			char *read_val[50];
+			char *read_val;
 			
 			cfg_getValueForKey(argv[2], read_val);
 			printf("Value for %s: %s\n", argv[2], read_val);

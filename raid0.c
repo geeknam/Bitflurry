@@ -77,7 +77,7 @@ void raid0_putFile(char *filename) {
 		
 		if (db_insertChunk(id, lastIndex[0], lastIndex[1], slice_index) != SQLITE_OK) break;
 		//printf("Inserted for order: %d at (%d, %d)\n", slice_index, lastIndex[1], lastIndex[0]);
-		printf("%d...", ((slice_index+1)*100)/(num_slices+1));
+		printf("%d...", (int) (((slice_index+1)*100)/(num_slices+1)));
 	}
 	printf("done!\n");
 	printf("\nFile transaction completed successfully.\n");

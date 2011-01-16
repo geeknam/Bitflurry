@@ -9,13 +9,6 @@ void raid5_putFile(char *filename) {
 
 	long num_rows;	      				// Rows of RAID5 calculation groups
 	long data_cols;						// Columns of striping
-	long start_row;						// Very important - needed to start parity at the right position
-
-	// Used in the loop
-	int parity_col;
-	int disk_col;
-	int slice_index;
-	int last_slice_index;
 
 	char *file_out = NULL;
 	FILE *fp_in;
@@ -24,20 +17,28 @@ void raid5_putFile(char *filename) {
 	int bytes_read;
 	int bytes_to_write;
 	long bytes_written;
-
-	// Calculate dimensions for RAID5 stripe
-	file_size = fs_getFileSize(filename);					// Get size of the file
-	data_cols = DISK_TOTAL - 1;						// Calculate number of columns used for *DATA*
-	num_rows = (int) ceil((double) (file_size / slice_size) / (double) data_cols);	// Calculate number of rows (rounded up to fit)
 	
+	// File size and number of slices
+	file_size = fs_getFileSize(filename);					// Get size of the file
+	int num_slices = file_size / slice_size;
+
+
+	// Get last used row & column from the database
 	int lastIndex[2];
 	db_getLastIndex(lastIndex);
+	int start_row = lastIndex[1];
+	int start_col = lastIndex[0];
 	
-	start_row = lastIndex[1];
+	// Start on the next empty slice
+	start_col++;
+	if (start_col >= DISK_TOTAL - 1) {
+		start_col = 0;
+		start_row++;
+	}
 	
-	// num_slices = file_size / slice_size;		// Number of slices
-	// last_slice_index = num_slices + 1;						// index of the last slice
-	last_slice_size = file_size - (num_rows * data_cols * slice_size);		// size of the last slice
+	// Calculate row to end on
+	int end_row = start_row + num_slices / (DISK_TOTAL - 1);
+	int end_col;
 
 	fp_in = fopen(filename, "rb");							// open original file
 
@@ -57,39 +58,44 @@ void raid5_putFile(char *filename) {
 
 	printf("Progress: 0%%\n");
 
-	int cur_row;
-	int cur_col;
-	for (cur_row = 0; cur_row < num_rows; cur_row++) {
+	int row_index;
+	int column_index;
+	int slice_iterator = 0;
+	int parity_at;
 
-		parity_col = (data_cols) - ((start_row + cur_row + 1) % (data_cols + 1));	// Calculate parity column
-
-		for (cur_col = 0; cur_col < data_cols + 1; cur_col++) {
-		
-			lastIndex[0]++;
-
-			if (cur_col < parity_col) disk_col = cur_col;
-			if (cur_col > parity_col) disk_col = cur_col - 1;
-			if (cur_col != parity_col) {
-				//file_out = (char *) realloc(file_out, (strlen(DISK_PATH) + strlen(DISK_ARRAY[lastIndex[0]]) + toDigit(lastIndex[1]) + 3) * sizeof(char));
-				//sprintf(file_out, "%s/%s/%d", DISK_PATH, DISK_ARRAY[lastIndex[0]], lastIndex[1]);  //concatenate names for the new output: movie.mp4.1
-				printf("%d\t", cur_row * data_cols + disk_col);
-				if (db_insertChunk(id, lastIndex[0], lastIndex[1], cur_row * data_cols + disk_col) != SQLITE_OK) break;
+	for (row_index = start_row; row_index <= end_row; row_index++) {
+		parity_at = DISK_TOTAL - 1 - row_index % DISK_TOTAL;
+		for (column_index = 0; column_index < DISK_TOTAL; column_index++) {
+			// Skip heading and tail columns
+			if (row_index == start_row && column_index < start_col) {
+				printf(".\t");
+				continue;
+			} else if (row_index == end_row && slice_iterator > num_slices) {
+				printf(".\t");
+				continue;
 			} else {
-				printf("P\t");
+				// Print parity or slice number
+				if (column_index == parity_at) {
+					printf("P\t");
+				} else {
+					printf("%d\t", slice_iterator);
+					slice_iterator++;
+					if (db_insertChunk(id, column_index, row_index, slice_iterator) != SQLITE_OK) break;
+				}
 			}
-
-			// allocate memory for the name of the output files
-			//file_out = (char *) realloc(file_out, (strlen(DISK_PATH) + strlen(DISK_ARRAY[lastIndex[0]]) + toDigit(lastIndex[1]) + 3) * sizeof(char));    //sizeof(char) = 1 byte
-
 		}
-		
-		lastIndex[1]++; lastIndex[0] = 0;
-		
-		// Progress indication
-		printf("%d%%\n", ((cur_row + 1) * 100) / num_rows);
-
+		printf("\n");
 	}
-	
+/*
+	while (bytes_written < cur_slice_size) {
+		bytes_to_write = BUFFER_SIZE;
+		bytes_read = fread(buffer, 1, bytes_to_write, fp_in);    // read bytes from file to the buffer
+		fwrite(buffer, 1, bytes_read, fp_out);					 // write bytes from buffer to the current slice
+		bytes_written += bytes_to_write;
+	}
+	fclose(fp_out);		// close the output file
+*/
+
 	printf("done!\n");
 	printf("\nFile transaction completed successfully.\n");
 	//printf("\nDB Insert Completed.\n");

@@ -45,7 +45,7 @@ int cfg_setValueForKey(char *key, char *val) {
 	// Assume our key+value is not more than 100 characters
 	char lineStr[100];
 	char tmpStr[100];
-	const char aText[50], bText[50];
+	char aText[50], bText[50];
 
 	FILE *tmpFile;
 	FILE *conFile; 

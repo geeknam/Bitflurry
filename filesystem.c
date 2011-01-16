@@ -37,10 +37,10 @@ void fs_getFile(char *filename, int raidLevel, char *outfile) {
 
 		switch (raidLevel) {
 			case 0:
-				raid0_getFile(&file, outfile);
+				raid0_getFile(file, outfile);
 				break;
 			case 5:
-				raid5_getFile(&file, outfile);
+				raid5_getFile(file, outfile);
 				break;
 			default:
 				printf("No RAID level specified. Cannot continue.");

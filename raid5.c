@@ -107,18 +107,18 @@ void raid5_putFile(char *filename) {
 					bytes_written = 0;
 					
 					slice_iterator++;
-					if (db_insertChunk_cacheStatement(stmt, id, column_index, row_index, slice_iterator) < 1) break;
+					if (db_insertChunk_cacheStatement(&stmt, id, column_index, row_index, slice_iterator) < 1) break;
 				}
 				fflush(stdout);
 			}
 		}
-		
-		if (db_insertChunk_cacheCommit(stmt) != SQLITE_OK) {
-			printf("Fatal error: Unable to commit chunk to database.");
-		}
 					
 		printf("\n");
 	}
+	
+	/*if (db_insertChunk_cacheCommit(stmt) != SQLITE_OK) {
+		printf("Fatal error: Unable to commit chunk to database.");
+	}*/
 		
 	raid5_reParity(start_row, end_row);
 	printf("done!\n");

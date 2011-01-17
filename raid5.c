@@ -6,6 +6,8 @@ void raid5_putFile(char *filename) {
 	long slice_size = CHUNK_SIZE;    		// Size of each slice: 4MB
 	long last_slice_size;				// Size of the last slice
 	long cur_slice_size;				// Determine whether the size is 4MB or the remainder (last_slice_size)
+	int slice_index = 0;
+	int last_slice_index;
 
 	long num_rows;	      				// Rows of RAID5 calculation groups
 	long data_cols;						// Columns of striping
@@ -26,7 +28,8 @@ void raid5_putFile(char *filename) {
 	// File size and number of slices
 	file_size = fs_getFileSize(filename);					// Get size of the file
 	int num_slices = file_size / slice_size;
-
+	last_slice_index = num_slices + 1;
+	last_slice_size = file_size - (num_slices * slice_size);
 
 	// Get last used row & column from the database
 	int lastIndex[2];
@@ -61,21 +64,21 @@ void raid5_putFile(char *filename) {
 	//printf("Using file_id: %d\n", id);
 	printf("Last - Row: %d, Col: %d\n\n", lastIndex[1], lastIndex[0]);
 
-	printf("Progress: 0%%...");
+	printf("Progress:\n0%%...\n");
 
 	int row_index;
 	int column_index;
-	int slice_iterator = 0;
 	int parity_at;
 
 	for (row_index = start_row; row_index <= end_row; row_index++) {
 		parity_at = DISK_TOTAL - 1 - row_index % DISK_TOTAL;
+		printf("%d%%...\t", row_index * 100 / end_row);
 		for (column_index = 0; column_index < DISK_TOTAL; column_index++) {
 			// Skip heading and tail columns
 			if (row_index == start_row && column_index < start_col) {
 				printf(".\t");
 				continue;
-			} else if (row_index == end_row && slice_iterator - 1 > num_slices) {
+			} else if (row_index == end_row && slice_index - 1 > num_slices) {
 				printf(".\t");
 				continue;
 			} else {
@@ -83,7 +86,7 @@ void raid5_putFile(char *filename) {
 				if (column_index == parity_at) {
 					printf("P\t");
 				} else {
-					printf("%d\t", slice_iterator);
+					printf("%d\t", slice_index);
 					
 					// Write file
 					// allocate memory for the name of the output files
@@ -91,6 +94,16 @@ void raid5_putFile(char *filename) {
 
 					sprintf (file_out, "%s/%s/%d", DISK_PATH, DISK_ARRAY[column_index], row_index);  //concatenate names for the new output: movie.mp4.1 , movie.mp4.2, ...
 					fp_out = fopen(file_out, "wb");						   // create and open a output file
+					
+					bytes_written = 0;
+					
+					// determine whether the size is 4MB or the remainder (last_slice_size)
+					if (slice_index == last_slice_index) {
+						cur_slice_size = last_slice_size;   // remainder
+					}
+					else {
+						cur_slice_size = slice_size;        // 4MB
+					}
 					
 					while (bytes_written < cur_slice_size) {
 						bytes_to_write = BUFFER_SIZE;
@@ -106,8 +119,8 @@ void raid5_putFile(char *filename) {
 					}
 					bytes_written = 0;
 					
-					slice_iterator++;
-					if (db_insertChunk_cacheStatement(&stmt, id, column_index, row_index, slice_iterator) < 1) break;
+					slice_index++;
+					if (db_insertChunk_cacheStatement(&stmt, id, column_index, row_index, slice_index) < 1) break;
 				}
 				fflush(stdout);
 			}
@@ -185,7 +198,7 @@ void raid5_reParity(int start_row, int end_row) {
 			}
 			// Write the calcuated parity back to parity file handle
 			fwrite(parity_buffer, 1, BUFFER_SIZE, fp[parity_at]);
-			printf("Byte %d OK!\n", parity_index);
+			printf("Byte %ld OK!\n", parity_index);
 		}
 		
 	}
@@ -228,7 +241,7 @@ void raid5_getFile(bf_file* file, char *outfile) {
 		
 		FILE *fp = fopen(chunkfile, "rb");
 		if (fp != NULL) {
-			//printf("Opened %s...\n", chunkfile);
+			printf("Opened %s...\n", chunkfile);
 		} else { return; }
 
 		long file_size = fs_getFileSize(chunkfile);

@@ -17,6 +17,10 @@ void raid0_putFile(char *filename) {
 	int bytes_read;
 	int bytes_to_write;
 	long bytes_written;
+	
+	char * stmt = NULL;
+	stmt = malloc(sizeof(char) + 1);
+	//stmt = ";";
 
 	file_size = fs_getFileSize(filename);						// get a size of the file
 	num_slices = file_size/slice_size;							// number of slices
@@ -49,9 +53,10 @@ void raid0_putFile(char *filename) {
 		//printf("Writing on [%d, %d]\n", lastIndex[1], lastIndex[0]);
 		
 		// allocate memory for the name of the output files
-		file_out = (char *) realloc(file_out, (strlen(DISK_PATH) + strlen(DISK_ARRAY[lastIndex[0]]) + toDigit(lastIndex[1]) + 3) * sizeof(char));    //sizeof(char) = 1 byte
+		int name_mem = (strlen(DISK_PATH) + strlen(DISK_ARRAY[lastIndex[0]]) + toDigit(lastIndex[1]) + 5) * sizeof(char);
+		file_out = (char *) realloc(file_out, name_mem);    //sizeof(char) = 1 byte
 
-		sprintf (file_out, "%s/%s/%d", DISK_PATH, DISK_ARRAY[lastIndex[0]], lastIndex[1]);  //concatenate names for the new output: movie.mp4.1 , movie.mp4.2, ...
+		snprintf (file_out, name_mem, "%s/%s/%d", DISK_PATH, DISK_ARRAY[lastIndex[0]], lastIndex[1]);  //concatenate names for the new output: movie.mp4.1 , movie.mp4.2, ...
 		fp_out = fopen(file_out, "wb");						   // create and open a output file
 		if (fp_out == NULL) {
 			printf("Fatal error: Perhaps the storage doesn't exist or bitflurry has no write permission.");
@@ -75,10 +80,16 @@ void raid0_putFile(char *filename) {
 		}
 		fclose(fp_out);		// close the output file
 		
-		if (db_insertChunk(id, lastIndex[0], lastIndex[1], slice_index) != SQLITE_OK) break;
+		if (db_insertChunk_cacheStatement(&stmt, id, lastIndex[0], lastIndex[1], slice_index) < 1) break;
 		//printf("Inserted for order: %d at (%d, %d)\n", slice_index, lastIndex[1], lastIndex[0]);
 		printf("%d...", (int) (((slice_index+1)*100)/(num_slices+1)));
+		fflush(stdout);
 	}
+	
+	if (db_insertChunk_cacheCommit(stmt) != SQLITE_OK) {
+		printf("Fatal error: Unable to commit chunk to database.");
+	}
+	
 	printf("done!\n");
 	printf("\nFile transaction completed successfully.\n");
 	//printf("\nDB Insert Completed.\n");

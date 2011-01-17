@@ -208,6 +208,109 @@ void raid5_reParity(int start_row, int end_row) {
 	free(fp);
 }
 
+void raid5_fsck() {
+
+	// Get last used row & column from the database
+	int lastIndex[2];
+	db_getLastIndex(lastIndex);
+	int start_row = lastIndex[1];
+	int start_col = lastIndex[0];
+	
+	int bytes_read;
+	long bytes_written;
+	char *chunkfile = NULL;
+	char *parityfile = NULL;
+	char buffer[BUFFER_SIZE];
+	char missing_buffer[BUFFER_SIZE];
+	
+	FILE** fp = malloc(sizeof(FILE*) * (DISK_TOTAL));
+	
+	int row_index;
+	int column_index;
+	int buffer_at;
+	
+	int missing_at;
+	int parity_at;
+	
+	int eof = 0;
+	
+	// Massive loop
+	for (row_index = 0; row_index <= start_row; row_index++) {
+	
+		missing_at = -1;
+		printf("Verifying row %d... ", row_index);
+		
+		// Open file handles for each column
+		for (column_index = 0; column_index < DISK_TOTAL; column_index++) {
+			
+			if (row_index == start_row && column_index >= start_col) {
+				eof = 1;
+			}
+			
+			chunkfile = (char *) realloc(chunkfile, (strlen(DISK_PATH) + strlen(DISK_ARRAY[column_index]) + toDigit(row_index) + 3) * sizeof(char));
+			sprintf(chunkfile, "%s/%s/%d", DISK_PATH, DISK_ARRAY[column_index], row_index);
+			
+			//printf("Chunk File is at %s\n.", chunkfile);
+			
+			fp[column_index] = fopen(chunkfile, "rb");
+			if (fp[column_index] == NULL && eof == 0) {
+				if (missing_at == -1) {
+					missing_at = column_index;
+					fp[column_index] = fopen(chunkfile, "wb");
+				} else {
+					missing_at = -2; // -2 = unrecoverable
+				}
+			}
+
+		}
+		
+		if (missing_at == -1) {
+			printf("OK!\n");
+		} else if (missing_at == -2) {
+			printf("Unrecoverable\n");
+		} else {
+			printf("Recovering...\n");
+			
+			// XOR missing file
+			long buffer_index;
+			for (buffer_index = 0; buffer_index < CHUNK_SIZE; buffer_index += BUFFER_SIZE) {
+				memset(missing_buffer, 0, sizeof(missing_buffer));
+				for (column_index = 0; column_index < DISK_TOTAL; column_index++) {
+				
+					if (row_index == start_row && column_index >= start_col) {
+						printf(".\t");
+						continue;
+					}
+				
+					if (column_index != missing_at) {
+						if (column_index == parity_at) {
+							printf("P\t");
+						} else {
+							printf("%d\t", column_index);
+						}
+						fread(buffer, 1, BUFFER_SIZE, fp[column_index]);
+						// Loop over buffer and perform byte XOR
+						for (buffer_at = 0; buffer_at < BUFFER_SIZE; buffer_at++) {
+							missing_buffer[buffer_at] = missing_buffer[buffer_at] ^ buffer[buffer_at];
+						}
+					} else {
+						printf("X\t");
+					}
+				}
+				printf("Recovered bytes %ld\n", buffer_index);
+			}
+			
+			// Write the calcuated parity back to parity file handle
+			fwrite(missing_buffer, 1, BUFFER_SIZE, fp[missing_at]);
+			printf("Recovered!\n");
+		}
+		
+	}
+	
+	free(fp);
+	
+}
+
 void raid5_getFile(bf_file* file, char *outfile) {
 
 	char buffer[BUFFER_SIZE];
@@ -242,7 +345,7 @@ void raid5_getFile(bf_file* file, char *outfile) {
 		sprintf(chunkfile, "%s/%s/%d", DISK_PATH, DISK_ARRAY[file->chunks[i].col],file->chunks[i].row);
 		
 		FILE *fp = fopen(chunkfile, "rb");
-		if (fp != NULL) {
+		if (fp != NULL) { 
 			printf("Opened %s...\n", chunkfile);
 		} else { return; }
 
@@ -269,3 +372,4 @@ void raid5_getFile(bf_file* file, char *outfile) {
 	if (!to_stdout) printf("\nFile transaction completed successfully.\n");
 
 }
+

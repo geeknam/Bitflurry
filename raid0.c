@@ -159,3 +159,7 @@ void raid0_getFile(bf_file* file, char *outfile) {
 	if (!to_stdout) printf("\nFile transaction completed successfully.\n");
 
 }
+
+void raid0_fsck() {
+	printf("\nFilesystem integrity checking not supported in RAID 0");
+}

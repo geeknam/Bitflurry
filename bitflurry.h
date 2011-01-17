@@ -21,3 +21,6 @@ void putFile(char *filename);
 
 // get file from the filesystem
 void getFile(char *filename, char *outfile);
+
+// filesystem check
+void fsck();

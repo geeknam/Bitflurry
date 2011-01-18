@@ -172,9 +172,9 @@ void raid5_reParity(int start_row, int end_row) {
 			}
 		}
 
-		// Read buffer by buffer
+		// Read int by int
 		long parity_index;
-		for (parity_index = 0; parity_index < CHUNK_SIZE; parity_index += BUFFER_SIZE) {
+		for (parity_index = 0; parity_index < CHUNK_SIZE; parity_index++) {
 			buffer = 0;
 			parity_buffer = 0;
 			for (column_index = 0; column_index < DISK_TOTAL; column_index++) {
@@ -185,9 +185,9 @@ void raid5_reParity(int start_row, int end_row) {
 			}
 			// Write the calcuated parity back to parity file handle
 			fputc(parity_buffer, fp[parity_at]);
-			printf("\rProgress: %d%%...", row_index * 100 / end_row);
 			fflush(stdout);
 		}
+		printf("\rProgress: %d%%...", row_index * 100 / end_row);
 		
 	}
 	
@@ -222,7 +222,7 @@ void raid5_fsck() {
 	
 	int eof = 0;
 	
-	printf("Verifying RAID 5 consistency... ");
+	printf("Verifying RAID 5 consistency...\n");
 	
 	// Massive loop
 	for (row_index = 0; row_index <= start_row; row_index++) {
@@ -268,10 +268,9 @@ void raid5_fsck() {
 						if (buffer != EOF) missing_buffer = missing_buffer ^ buffer;
 					}
 				}
+				// Write the recovered column back to the file handle
+				fputc(missing_buffer, fp[missing_at]);
 			}
-			
-			// Write the recovered column back to the file handle
-			fputc(missing_buffer, fp[missing_at]);
 			printf("Recovered!\n");
 		}
 		

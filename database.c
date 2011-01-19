@@ -33,7 +33,8 @@ int db_createTable() {
     char create_table[] = "\
 		CREATE TABLE IF NOT EXISTS `files` (\
 		  `_id` INTEGER PRIMARY KEY,\
-		  `filename` varchar(255) NOT NULL\
+		  `filename` varchar(255) NOT NULL,\
+		  `filesize` int(11) NOT NULL\
 		);\
 		CREATE TABLE IF NOT EXISTS `chunks` (\
 		  `col` int(11) NOT NULL,\
@@ -53,14 +54,14 @@ int db_createTable() {
 	return retval;
 }
 
-int db_insertFile(char *filename) {
+int db_insertFile(char *filename, int filesize) {
 	int retval = 0;
 	char *zErrMsg = NULL;
 	
 	char *insert_file;
-	insert_file = (char *) malloc((41 + strlen(filename) + 1) * sizeof(char));
+	insert_file = (char *) malloc((53 + strlen(filename) + toDigit(filesize) + 1) * sizeof(char));
 	if (insert_file == NULL) return -1;
-	sprintf(insert_file, "INSERT INTO files (filename) VALUES (\"%s\");", filename);
+	sprintf(insert_file, "INSERT INTO files (filename, filesize) VALUES (\"%s\", %d);", filename, filesize);
 	
 	//printf("Query: %s\n", insert_file);
 	retval = sqlite3_exec(db_handle, insert_file, 0, 0, &zErrMsg);
@@ -197,6 +198,7 @@ bf_file* db_getFile(char *filename) {
 	int retval = 0;
 	
 	int total_chunks = 0;
+	int filesize = 0;
 	
 	// If db is not opened failed, handle returns NULL
     if (db_opened == 0) {
@@ -204,9 +206,54 @@ bf_file* db_getFile(char *filename) {
         return NULL;
     }
 	
-	// Construct our query
-	//		- Count the number of expected results to create our array
+	// Construct our first query
+	//		- Get file information from database
 	char *select_query = NULL;
+	select_query = realloc(select_query, (strlen("SELECT * FROM files WHERE filename = \"\"") + strlen(filename) + 1) * sizeof(char));
+	if (select_query == NULL) return NULL;
+	sprintf(select_query, "SELECT * FROM files WHERE filename = \"%s\"", filename);
+	
+	//printf("Query 1: %s\n", select_query);
+	
+	// Self explanatory codes from here on...
+	retval = sqlite3_prepare_v2(db_handle, select_query, -1, &db_stmt, 0);
+	if (retval) {
+        printf("DB: Unknown error while retrieving data.\n");
+        return NULL;
+    }
+
+	// Read the number of cols fetched
+	int cols = sqlite3_column_count(db_stmt);
+	
+	while (1) {
+        // fetch a row's status
+        retval = sqlite3_step(db_stmt);
+
+        if (retval == SQLITE_ROW) {
+            // SQLITE_ROW means fetched a row
+			
+            int col;
+			for (col = 0; col < cols; col++) {
+				const char *col_name = sqlite3_column_name(db_stmt, col);
+                int val = sqlite3_column_int(db_stmt, col);
+                //printf("%s = %d\t", sqlite3_column_name(db_stmt, col), val);
+
+				// Assign the corresponding col & row values to the array
+				if (strcmp(col_name, "filesize") == 0) {
+					filesize = val;
+				}
+            }
+			//printf("\n");
+        } else if(retval == SQLITE_DONE) { break; }
+        else {
+            // Some error encountered
+            printf("DB: Unknown error while retrieving data.\n");
+			return NULL;
+        }
+    }
+	
+	// Second Query
+	//		- Count the number of expected results to create our array
 	select_query = realloc(select_query, (strlen("SELECT COUNT(*) FROM chunks WHERE file_id IN (SELECT _id FROM files WHERE filename = \"\") ORDER BY `order` ASC") + strlen(filename) + 1) * sizeof(char));
 	if (select_query == NULL) return NULL;
 	sprintf(select_query, "SELECT COUNT(*) FROM chunks WHERE file_id IN (SELECT _id FROM files WHERE filename = \"%s\") ORDER BY `order` ASC", filename);
@@ -221,7 +268,7 @@ bf_file* db_getFile(char *filename) {
     }
 
 	// Read the number of cols fetched
-	int cols = sqlite3_column_count(db_stmt);
+	cols = sqlite3_column_count(db_stmt);
 	
 	while (1) {
         // fetch a row's status
@@ -249,7 +296,7 @@ bf_file* db_getFile(char *filename) {
 
 	if (total_chunks <= 0) return NULL;
 
-	// Second Query
+	// Third Query
 	//		Get our real results
 	select_query = realloc(select_query, (strlen("SELECT * FROM chunks WHERE file_id IN (SELECT _id FROM files WHERE filename = \"\") ORDER BY `order` ASC") + strlen(filename) + 1) * sizeof(char));
 	if (select_query == NULL) return NULL;
@@ -272,6 +319,7 @@ bf_file* db_getFile(char *filename) {
 	if (file == NULL) return NULL;
 	strcpy(file->filename, filename);
 	file->total_chunks = total_chunks;
+	file->filesize = filesize;
 	
 	// the power(horror) of dynamic array
 	bf_chunk *chunks = NULL;

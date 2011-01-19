@@ -60,7 +60,7 @@ void raid5_putFile(char *filename) {
 	}
 	
 	int id = 0;
-	id = db_insertFile(filename);
+	id = db_insertFile(filename, file_size);
 	printf("Striping file %s...\n", filename);
 	printf("Progress: 0...");
 
@@ -98,12 +98,22 @@ void raid5_putFile(char *filename) {
 						cur_slice_size = slice_size;        // 4MB
 					}
 					
-					while (bytes_written < cur_slice_size) {
+					while (bytes_written < slice_size) {
 						bytes_to_write = BUFFER_SIZE;
 						bytes_read = fread(buffer, 1, bytes_to_write, fp_in);    // read bytes from file to the buffer
-						fwrite(buffer, 1, bytes_read, fp_out);					 // write bytes from buffer to the current slice
-						bytes_written += bytes_to_write;						
+						if (bytes_read == 0) {
+							// Padding to ensure chunk size is always = BUFFER_SIZE
+							char pad_buffer[slice_size-bytes_written];
+							bytes_read = sizeof(pad_buffer);
+							bytes_to_write = bytes_read;
+							memset(pad_buffer, '\0', bytes_to_write);
+							fwrite(pad_buffer, 1, bytes_to_write, fp_out);					 // write bytes from buffer to the current slice
+						} else {
+							fwrite(buffer, 1, bytes_read, fp_out);					 // write bytes from buffer to the current slice
+						}
+						bytes_written += bytes_read;
 					}
+					fflush(fp_out);
 					fclose(fp_out);		// close the output file
 					
 					if (fp_out == NULL) {
@@ -307,6 +317,7 @@ void raid5_getFile(bf_file* file, char *outfile) {
 	}
 	
 	if (!to_stdout) printf("Progress: 0%%...");
+	int total_size_written = 0;
 	int i;
 	for (i = 0; i < file->total_chunks; i++) {
 		//printf("\t[%d,%d] %d\n", file->chunks[i].row, file->chunks[i].col, file->chunks[i].order);//
@@ -321,12 +332,26 @@ void raid5_getFile(bf_file* file, char *outfile) {
 
 		bytes_written = 0;
 
-		while (bytes_written < file_size) {
-			bytes_read = fread(buffer, 1, BUFFER_SIZE, fp);
-			fwrite(buffer, 1, bytes_read, file_out);					 // write bytes from buffer to the current slice
-			if (to_stdout) fflush(stdout);
-			bytes_written += BUFFER_SIZE;
+		if (i != file->total_chunks-1) {
+			while (bytes_written < file_size) {
+				bytes_read = fread(buffer, 1, BUFFER_SIZE, fp);
+				fwrite(buffer, 1, bytes_read, file_out);					 // write bytes from buffer to the current slice
+				if (to_stdout) fflush(stdout);
+				bytes_written += bytes_read;
+			}
+		} else {
+			while (total_size_written+bytes_written < file->filesize) {
+				int bytes_to_write = 0;
+				bytes_read = fread(buffer, 1, BUFFER_SIZE, fp);
+				if (total_size_written + bytes_written + bytes_read > file->filesize) 
+					bytes_read = file->filesize - (total_size_written + bytes_written);
+				fwrite(buffer, 1, bytes_read, file_out);					 // write bytes from buffer to the current slice
+				if (to_stdout) fflush(stdout);
+				bytes_written += bytes_read;
+			}
 		}
+		
+		total_size_written += bytes_written;
 		fclose(fp);
 		
 		if (!to_stdout) printf("\rProgress: %d%%...", ((i+1)*100)/file->total_chunks);

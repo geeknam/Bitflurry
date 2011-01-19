@@ -33,6 +33,7 @@ typedef struct {
 typedef struct {
 	int _id;
 	char filename[255];
+	int filesize;
 	int total_chunks;
 	bf_chunk *chunks; // dynamic array
 } bf_file;
@@ -48,7 +49,7 @@ int db_createTable();
 
 // inserts a file to the table
 // 		returns: last_insert_id
-int db_insertFile(char *filename);
+int db_insertFile(char *filename, int filesize);
 
 // inserts a chunk to the table
 //		returns: sqlite3 return codes

@@ -63,6 +63,9 @@ void fs_fsck(int raidLevel) {
 		case 5:
 			raid5_fsck();
 			break;
+		case 6:
+			raid6_fsck();
+			break;
 		default:
 			printf("No RAID level specified. Cannot continue.");
 	}

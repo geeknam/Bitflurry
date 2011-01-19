@@ -62,10 +62,7 @@ void raid5_putFile(char *filename) {
 	int id = 0;
 	id = db_insertFile(filename);
 	printf("Striping file %s...\n", filename);
-	//printf("Using file_id: %d\n", id);
-	printf("Last - Row: %d, Col: %d\n\n", lastIndex[1], lastIndex[0]);
-
-	printf("Progress:\n0%%...\n");
+	printf("Progress: 0...");
 
 	int row_index;
 	int column_index;
@@ -73,21 +70,16 @@ void raid5_putFile(char *filename) {
 
 	for (row_index = start_row; row_index <= end_row; row_index++) {
 		parity_at = DISK_TOTAL - 1 - row_index % DISK_TOTAL;
-		printf("%d%%...\t", row_index * 100 / end_row);
 		for (column_index = 0; column_index < DISK_TOTAL; column_index++) {
 			// Skip heading and tail columns
-			if (row_index == start_row && column_index < start_col) {
-				printf(".\t");
-				continue;
-			} else if (row_index == end_row && slice_index - 1 > num_slices) {
-				printf(".\t");
+			if (
+				(row_index == start_row && column_index < start_col) ||
+				(row_index == end_row && slice_index - 1 > num_slices)
+			) {
 				continue;
 			} else {
 				// Print parity or slice number
-				if (column_index == parity_at) {
-					printf("P\t");
-				} else {
-					printf("%d\t", slice_index);
+				if (column_index != parity_at) {
 					
 					// Write file
 					// allocate memory for the name of the output files
@@ -102,8 +94,7 @@ void raid5_putFile(char *filename) {
 					// determine whether the size is 4MB or the remainder (last_slice_size)
 					if (slice_index == last_slice_index) {
 						cur_slice_size = last_slice_size;   // remainder
-					}
-					else {
+					} else {
 						cur_slice_size = slice_size;        // 4MB
 					}
 					
@@ -121,22 +112,24 @@ void raid5_putFile(char *filename) {
 					}
 					bytes_written = 0;
 					
+					printf("\rProgress: %d%%...", slice_index * 100 / (num_slices + 1));
+					fflush(stdout);
+					
 					slice_index++;
 					if (db_insertChunk_cacheStatement(&stmt, id, column_index, row_index, slice_index) < 1) break;
 				}
-				fflush(stdout);
 			}
 		}
-					
-		printf("\n");
 	}
 	
 	if (db_insertChunk_cacheCommit(stmt) != SQLITE_OK) {
 		printf("Fatal error: Unable to commit chunk to database.");
 	}
-		
+	
+	printf("Done!\n");
+	
 	raid5_reParity(start_row, end_row);
-	printf("done!\n");
+	
 	printf("\nFile transaction completed successfully.\n");
 	//printf("\nDB Insert Completed.\n");
 	
@@ -149,31 +142,29 @@ void raid5_reParity(int start_row, int end_row) {
 	
 	int bytes_read;
 	long bytes_written;
+	
 	char *chunkfile = NULL;
-	char *parityfile = NULL;
-	char buffer[BUFFER_SIZE];
-	char parity_buffer[BUFFER_SIZE];
+	int buffer;
+	int parity_buffer;
 	
 	FILE** fp = malloc(sizeof(FILE*) * (DISK_TOTAL));
 	
-	int row_index;
+	int row_index = start_row;
 	int column_index;
 	int parity_at;
 	int buffer_at;
 	
+	printf("Calculating parity for affected rows (%d-%d)...\n", start_row, end_row);
+	printf("Progress: 0%%...");
+	
 	for (row_index = start_row; row_index <= end_row; row_index++) {
 	
 		parity_at = DISK_TOTAL - 1 - row_index % DISK_TOTAL;
-		printf("Recalculating parity for row %d at %d...\n", row_index, parity_at);
 		
 		// Open file handles for each column
 		for (column_index = 0; column_index < DISK_TOTAL; column_index++) {
-			
 			chunkfile = (char *) realloc(chunkfile, (strlen(DISK_PATH) + strlen(DISK_ARRAY[column_index]) + toDigit(row_index) + 3) * sizeof(char));
 			sprintf(chunkfile, "%s/%s/%d", DISK_PATH, DISK_ARRAY[column_index], row_index);
-			
-			//printf("Chunk File is at %s\n.", chunkfile);
-			
 			if (column_index == parity_at) {
 				fp[column_index] = fopen(chunkfile, "wb");
 			} else {
@@ -181,31 +172,28 @@ void raid5_reParity(int start_row, int end_row) {
 			}
 		}
 
-		// Read buffer by buffer
+		// Read int by int
 		long parity_index;
-		for (parity_index = 0; parity_index < CHUNK_SIZE; parity_index += BUFFER_SIZE) {
-			memset(parity_buffer, 0, sizeof(parity_buffer));
+		for (parity_index = 0; parity_index < CHUNK_SIZE; parity_index++) {
+			buffer = 0;
+			parity_buffer = 0;
 			for (column_index = 0; column_index < DISK_TOTAL; column_index++) {
-				if (column_index != parity_at) {
-					printf("%d\t", column_index);
-					if (fp[column_index] == NULL) continue;
-					fread(buffer, 1, BUFFER_SIZE, fp[column_index]);
-					// Loop over buffer and perform byte XOR
-					for (buffer_at = 0; buffer_at < BUFFER_SIZE; buffer_at++) {
-						parity_buffer[buffer_at] = parity_buffer[buffer_at] ^ buffer[buffer_at];
-					}
-				} else {
-					printf("P\t");
+				if (column_index != parity_at && fp[column_index] != NULL) {
+					buffer = fgetc(fp[column_index]);
+					if (buffer != EOF) parity_buffer = parity_buffer ^ buffer;
 				}
 			}
 			// Write the calcuated parity back to parity file handle
-			fwrite(parity_buffer, 1, BUFFER_SIZE, fp[parity_at]);
-			printf("Byte %ld OK!\n", parity_index);
+			fputc(parity_buffer, fp[parity_at]);
+			fflush(stdout);
 		}
+		printf("\rProgress: %d%%...", row_index * 100 / end_row);
 		
 	}
 	
 	free(fp);
+	printf("Done!\n");
+	
 }
 
 void raid5_fsck() {
@@ -220,8 +208,8 @@ void raid5_fsck() {
 	long bytes_written;
 	char *chunkfile = NULL;
 	char *parityfile = NULL;
-	char buffer[BUFFER_SIZE];
-	char missing_buffer[BUFFER_SIZE];
+	int buffer;
+	int missing_buffer;
 	
 	FILE** fp = malloc(sizeof(FILE*) * (DISK_TOTAL));
 	
@@ -234,18 +222,16 @@ void raid5_fsck() {
 	
 	int eof = 0;
 	
+	printf("Verifying RAID 5 consistency...\n");
+	
 	// Massive loop
 	for (row_index = 0; row_index <= start_row; row_index++) {
 	
 		missing_at = -1;
-		printf("Verifying row %d... ", row_index);
 		
 		// Open file handles for each column
 		for (column_index = 0; column_index < DISK_TOTAL; column_index++) {
 			
-			if (row_index == start_row && column_index >= start_col) {
-				eof = 1;
-			}
 			
 			chunkfile = (char *) realloc(chunkfile, (strlen(DISK_PATH) + strlen(DISK_ARRAY[column_index]) + toDigit(row_index) + 3) * sizeof(char));
 			sprintf(chunkfile, "%s/%s/%d", DISK_PATH, DISK_ARRAY[column_index], row_index);
@@ -253,60 +239,44 @@ void raid5_fsck() {
 			//printf("Chunk File is at %s\n.", chunkfile);
 			
 			fp[column_index] = fopen(chunkfile, "rb");
-			if (fp[column_index] == NULL && eof == 0) {
+			if (
+				fp[column_index] == NULL &&
+				!(row_index == start_row && column_index >= start_col) // *Not* EOF
+			) {
 				if (missing_at == -1) {
 					missing_at = column_index;
 					fp[column_index] = fopen(chunkfile, "wb");
-				} else {
-					missing_at = -2; // -2 = unrecoverable
+				} else if (missing_at != -2) {
+					missing_at = -2; // As long as this is less than -1, it is unrecoverable
+					printf("Unrecoverable row %d\n", row_index);
 				}
 			}
 
 		}
 		
-		if (missing_at == -1) {
-			printf("OK!\n");
-		} else if (missing_at == -2) {
-			printf("Unrecoverable\n");
-		} else {
-			printf("Recovering...\n");
+		if (missing_at >= 0) {
+			printf("Recovering row %d... ", row_index);
 			
-			// XOR missing file
+			// XOR valid columns to obtain missing column
 			long buffer_index;
-			for (buffer_index = 0; buffer_index < CHUNK_SIZE; buffer_index += BUFFER_SIZE) {
-				memset(missing_buffer, 0, sizeof(missing_buffer));
+			for (buffer_index = 0; buffer_index < CHUNK_SIZE; buffer_index++) {
+				buffer = 0;
+				missing_buffer = 0;
 				for (column_index = 0; column_index < DISK_TOTAL; column_index++) {
-				
-					if (row_index == start_row && column_index >= start_col) {
-						printf(".\t");
-						continue;
-					}
-				
 					if (column_index != missing_at) {
-						if (column_index == parity_at) {
-							printf("P\t");
-						} else {
-							printf("%d\t", column_index);
-						}
-						fread(buffer, 1, BUFFER_SIZE, fp[column_index]);
-						// Loop over buffer and perform byte XOR
-						for (buffer_at = 0; buffer_at < BUFFER_SIZE; buffer_at++) {
-							missing_buffer[buffer_at] = missing_buffer[buffer_at] ^ buffer[buffer_at];
-						}
-					} else {
-						printf("X\t");
+						buffer = fgetc(fp[column_index]);
+						if (buffer != EOF) missing_buffer = missing_buffer ^ buffer;
 					}
 				}
-				printf("Recovered bytes %ld\n", buffer_index);
+				// Write the recovered column back to the file handle
+				fputc(missing_buffer, fp[missing_at]);
 			}
-			
-			// Write the calcuated parity back to parity file handle
-			fwrite(missing_buffer, 1, BUFFER_SIZE, fp[missing_at]);
 			printf("Recovered!\n");
 		}
 		
 	}
 	
+	printf("Done!\n");
 	free(fp);
 	
 }
@@ -336,7 +306,7 @@ void raid5_getFile(bf_file* file, char *outfile) {
 		file_out = fopen(outfile, "wb");
 	}
 	
-	if (!to_stdout) printf("Progress: 0...");
+	if (!to_stdout) printf("Progress: 0%%...");
 	int i;
 	for (i = 0; i < file->total_chunks; i++) {
 		//printf("\t[%d,%d] %d\n", file->chunks[i].row, file->chunks[i].col, file->chunks[i].order);//
@@ -345,9 +315,7 @@ void raid5_getFile(bf_file* file, char *outfile) {
 		sprintf(chunkfile, "%s/%s/%d", DISK_PATH, DISK_ARRAY[file->chunks[i].col],file->chunks[i].row);
 		
 		FILE *fp = fopen(chunkfile, "rb");
-		if (fp != NULL) { 
-			printf("Opened %s...\n", chunkfile);
-		} else { return; }
+		if (fp == NULL) { return; }
 
 		long file_size = fs_getFileSize(chunkfile);
 
@@ -361,10 +329,11 @@ void raid5_getFile(bf_file* file, char *outfile) {
 		}
 		fclose(fp);
 		
-		if (!to_stdout) printf("%d...", ((i+1)*100)/file->total_chunks);
+		if (!to_stdout) printf("\rProgress: %d%%...", ((i+1)*100)/file->total_chunks);
+		fflush(stdout);
 	}
 
-	if (!to_stdout) printf("done!\n");
+	if (!to_stdout) printf("Done!\n");
 	free(file);
 	free(chunkfile);
 	fclose(file_out);

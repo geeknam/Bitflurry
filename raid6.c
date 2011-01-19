@@ -316,10 +316,19 @@ void raid6_dp_reParity(int start_row, int end_row) {
 }
 
 void raid6_fsck() {
-	raid6_fsck_sp();
+	int recovered_sp = 0;
+	int recovered_dp = 0;
+	
+	while (recovered_sp < 1 || recovered_dp < 1) {
+		recovered_dp = raid6_fsck_dp();
+		recovered_sp = raid6_fsck_sp();
+	}
+	
+	if (recovered_sp == 1 && recovered_dp == 1) printf("Array rebuild process completed successfully.\n");
+	else printf("Array rebuild process has failed. Perhaps more than 2 disks are missing.\n");
 }
 
-void raid6_fsck_sp() {
+int raid6_fsck_sp() {
 	// Get last used row & column from the database
 	int lastIndex[2];
 	db_getLastIndex(lastIndex);
@@ -434,13 +443,13 @@ void raid6_fsck_sp() {
 	
 	if (fully_recovered == 0) {
 		printf("Continuing recovery...\n");
-		raid6_fsck_dp();
+		return 0;
 	} else {
-		printf("Recovery completed!\n");
+		return 1;
 	}
 }
 
-void raid6_fsck_dp() {
+int raid6_fsck_dp() {
 	// Get last used row & column from the database
 	int lastIndex[2];
 	db_getLastIndex(lastIndex);
@@ -547,8 +556,17 @@ void raid6_fsck_dp() {
 			chunkfile = (char *) realloc(chunkfile, (strlen(DISK_PATH) + strlen(DISK_ARRAY[parity_at]) + toDigit(parity_row_at) + 3) * sizeof(char));
 			sprintf(chunkfile, "%s/%s/%d", DISK_PATH, DISK_ARRAY[parity_at], parity_row_at);
 			fp[parity_at] = fopen(chunkfile, "rb");
-			used[parity_at] = 1;
-			printf("(%d, %d), ", parity_row_at, parity_at);
+			if (fp[parity_at] == NULL) {
+				printf("X{%d, %d}, ", parity_row_at, parity_at);
+				if (num_missing < 2) {
+					missing_at_row[num_missing] = parity_row_at;
+					missing_at_col[num_missing] = parity_at;
+					num_missing++;
+				}
+			} else {
+				used[parity_at] = 1;
+				printf("(%d, %d), ", parity_row_at, parity_at);
+			}
 			
 			if (num_missing == 0) {
 				printf("...OK!\n");
@@ -600,12 +618,13 @@ void raid6_fsck_dp() {
 		}
 	}
 	
-	//if (fully_recovered == 0) {
-		//printf("Continuing recovery...\n");
-		raid6_fsck_sp();
-	//} else {
+	if (fully_recovered == 0) {
+		printf("Continuing recovery...\n");
+		return 0;
+	} else {
 		//printf("Recovery completed!\n");
-	//}
+		return 1;
+	}
 }
 
 void raid6_getFile(bf_file* file, char *outfile) {

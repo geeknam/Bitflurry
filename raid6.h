@@ -5,5 +5,5 @@ void raid6_getFile(bf_file* file, char *outfile);
 void raid6_reParity(int start_row, int end_row);
 void raid6_dp_reParity(int start_row, int end_row);
 void raid6_fsck();
-void raid6_fsck_sp();
-void raid6_fsck_dp();
+int raid6_fsck_sp();
+int raid6_fsck_dp();

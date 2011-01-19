@@ -344,7 +344,7 @@ int raid6_fsck_sp() {
 	int missing_buffer;
 	//char missing_buffer[BUFFER_SIZE];
 	
-	FILE** fp = malloc(sizeof(FILE*) * (DISK_TOTAL));
+	FILE* fp[DISK_TOTAL];
 	
 	int row_index;
 	int column_index;
@@ -384,7 +384,8 @@ int raid6_fsck_sp() {
 			fp[column_index] = fopen(chunkfile, "rb");
 			if (fp[column_index] == NULL) {
 				if (row_index > lastIndex[1]
-					|| (row_index == lastIndex[1] && column_index > lastIndex[0])) {
+					|| (row_index == lastIndex[1] && column_index > lastIndex[0] && column_index != DISK_TOTAL-2)) {
+						//printf("Invalid; (%d, %d) vs (%d, %d): ", row_index, column_index, lastIndex[1], lastIndex[0]);
 						continue;
 				} else {
 					if (num_missing < 2) {
@@ -411,16 +412,23 @@ int raid6_fsck_sp() {
 			fp[missing_at_col[0]] = fopen(chunkfile, "wb");
 			
 			// XOR missing file
+			int print_once = 0;
 			long buffer_index;
+			printf("\n");
 			for (buffer_index = 0; buffer_index < CHUNK_SIZE; buffer_index += 1) {
 				buffer = 0;
 				missing_buffer = 0;
 				for (column_index = 0; column_index < DISK_TOTAL-1; column_index++) {
 					if (column_index != missing_at_col[0] && used[column_index] == 1) {
+						if (!print_once) printf("\t%d", column_index);
 						buffer = fgetc(fp[column_index]);
 						if (buffer != EOF) missing_buffer = missing_buffer ^ buffer;
+					} else {
+						if (!print_once) printf("\tM");
 					}
 				}
+				if (!print_once) printf("\tP\n");
+				print_once = 1;
 				
 				// Write the calcuated parity back to parity file handle
 				fputc(missing_buffer, fp[missing_at_col[0]]);

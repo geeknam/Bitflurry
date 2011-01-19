@@ -181,12 +181,13 @@ void raid6_reParity(int start_row, int end_row) {
 	
 	// Close all opened handles first
 	int k = 0;
-	while (1) {
-		if (k == DISK_TOTAL-1) break;
+	for (k = 0; k < DISK_TOTAL-1; k++) {
 		if (fp[k] != NULL) fclose(fp[k]);
 		fp[k] = NULL;
-		k++;
 	}
+	
+	free(chunkfile);
+	free(parityfile);
 	
 	printf("Done!\n");
 }
@@ -313,16 +314,17 @@ void raid6_dp_reParity(int start_row, int end_row) {
 			fflush(fp[parity_at]);
 			// Close all opened handles first
 			k = 0;
-			while (1) {
-				if (k == DISK_TOTAL-1) break;
+			for (k = 0; k < DISK_TOTAL; k++) {
 				if (used[k] == 1) fclose(fp[k]);
 				fp[k] = NULL;
-				k++;
 			}
 		}
 	}
 	
 	printf("Done!\n");
+	
+	free(chunkfile);
+	free(parityfile);
 }
 
 void raid6_fsck() {
@@ -458,13 +460,14 @@ int raid6_fsck_sp() {
 		}
 		
 		k = 0;
-		while (1) {
-			if (k == DISK_TOTAL-1) break;
+		for (k = 0; k < DISK_TOTAL; k++) {
 			if (used[k] == 1) fclose(fp[k]);
 			fp[k] = NULL;
-			k++;
 		}
 	}
+	
+	free(chunkfile);
+	free(parityfile);
 	
 	if (fully_recovered == 0) {
 		//printf("Continuing recovery...\n");
@@ -639,14 +642,15 @@ int raid6_fsck_dp() {
 			
 			// Close all opened handles first
 			k = 0;
-			while (1) {
-				if (k == DISK_TOTAL-1) break;
+			for (k = 0; k < DISK_TOTAL; k++) {
 				if (used[k] == 1) fclose(fp[k]);
 				fp[k] = NULL;
-				k++;
 			}
 		}
 	}
+	
+	free(chunkfile);
+	free(parityfile);
 	
 	if (fully_recovered == 0) {
 		//printf("Continuing recovery...\n");

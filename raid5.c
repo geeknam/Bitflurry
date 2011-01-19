@@ -80,6 +80,9 @@ void raid5_putFile(char *filename) {
 			} else {
 				// Print parity or slice number
 				if (column_index != parity_at) {
+					// Faruq: Dirty fix for clearing extra slice
+					// TODO: Better fix!
+					if (slice_index > last_slice_index-1) break;
 					
 					// Write file
 					// allocate memory for the name of the output files

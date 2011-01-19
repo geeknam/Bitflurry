@@ -39,7 +39,8 @@ void raid6_putFile(char *filename) {
 	
 	int id = 0;
 	id = db_insertFile(filename, file_size);
-	printf("Putting file %s...\n", filename);
+	printf("Striping file %s:\n", filename);
+	printf("\tProgress: 0...");
 	//printf("Using file_id: %d\n", id);
 	
 	int lastIndex[2];
@@ -48,7 +49,6 @@ void raid6_putFile(char *filename) {
 	db_getLastIndex(lastIndex);
 	//printf("Last - Row: %d, Col: %d\n\n", lastIndex[1], lastIndex[0]);
 
-	printf("Progress: 0...");
 	for (slice_index = 0; slice_index <= num_slices; slice_index++) {
 		lastIndex[0]++;
 		if (lastIndex[0] >= DISK_TOTAL-2) { lastIndex[1]++; lastIndex[0] = 0; }
@@ -95,7 +95,7 @@ void raid6_putFile(char *filename) {
 		
 		if (db_insertChunk_cacheStatement(&stmt, id, lastIndex[0], lastIndex[1], slice_index) < 1) break;
 		//printf("Inserted for order: %d at (%d, %d)\n", slice_index, lastIndex[1], lastIndex[0]);
-		printf("%d...", (int) (((slice_index+1)*100)/(num_slices+1)));
+		printf("\r\tProgress: %d%%...", (slice_index + 1) * 100 / (num_slices + 1));
 		fflush(stdout);
 	}
 	
@@ -105,9 +105,11 @@ void raid6_putFile(char *filename) {
 	
 	end_row = lastIndex[1];
 	
+	printf("Done!\n");
+	
 	raid6_reParity(start_row, end_row);
 	raid6_dp_reParity(start_row, end_row);
-	printf("done!\n");
+	
 	printf("\nFile transaction completed successfully.\n");
 	//printf("\nDB Insert Completed.\n");
 	
@@ -129,17 +131,20 @@ void raid6_reParity(int start_row, int end_row) {
 	int buffer;
 	int parity_buffer;
 	
-	FILE** fp = malloc(sizeof(FILE*) * (DISK_TOTAL));
+	FILE* fp[DISK_TOTAL];
 	
 	int row_index;
 	int column_index;
 	int parity_at;
 	unsigned int parity_row_at;
 	
-	printf("\nCalculating normal parity...\n");
+	printf("Calculating parity for affected rows (%d-%d):", start_row, end_row);
+	printf("\n\tProgress: 0%%...");
+	
 	for (row_index = start_row; row_index <= end_row; row_index++) {
 		parity_at = DISK_TOTAL - 2;
-		printf("\tParity for row %d.\n", row_index);
+		printf("\r\tProgress: row %d (%d%%)...", row_index, row_index * 100 / end_row);
+		fflush(stdout);
 		
 		// Open file handles for each column
 		for (column_index = 0; column_index < DISK_TOTAL - 1; column_index++) {
@@ -183,7 +188,7 @@ void raid6_reParity(int start_row, int end_row) {
 		k++;
 	}
 	
-	//free(fp);
+	printf("Done!\n");
 }
 
 void raid6_dp_reParity(int start_row, int end_row) {
@@ -204,10 +209,12 @@ void raid6_dp_reParity(int start_row, int end_row) {
 	
 	FILE* fp[DISK_TOTAL];
 	
-	printf("Calculating double parity...\n");
+	printf("Calculating d-parity for affected rows (%d-%d):", start_row + row_adjustment, end_row);
+	printf("\n\tProgress: 0%%...");
+	
 	for (row_index = start_row + row_adjustment; row_index <= end_row; row_index=row_index+(DISK_TOTAL-2)) {
 		parity_at = DISK_TOTAL - 1;
-		printf("\tParity for rows %d-%d: \n", row_index, row_index+DISK_TOTAL-3);
+		//printf("\r\tParity for rows %d-%d, ", row_index, row_index+DISK_TOTAL-3);
 		
 		int i;
 		int skipped = 0;
@@ -218,7 +225,8 @@ void raid6_dp_reParity(int start_row, int end_row) {
 			if (data_col_start < 0) data_col_start = (DISK_TOTAL-2);
 			
 			// Open file handles for diagonal blocks
-			printf("\t\tSet %d: ", row_index+i-skipped);
+			printf("\r\tParity for rows %d-%d, set %d (%d%%)...", row_index, row_index+DISK_TOTAL-3, row_index+i-skipped, (row_index+i-skipped-1) * 100 / end_row);
+			fflush(stdout);
 			int j = data_col_start;
 			int j_count = -1;
 			int skip = 1;
@@ -248,14 +256,14 @@ void raid6_dp_reParity(int start_row, int end_row) {
 				if (fp[data_col]) {
 					used[data_col] = 1;
 					//printf("\tdata_col: %s [%d]\n", chunkfile, data_col);
-					printf("O");
+					//printf("O");
 				} else {
-					printf("M");
+					//printf("M");
 				}
-				printf("(%d, %d), ", data_row, data_col);
+				//printf("(%d, %d), ", data_row, data_col);
 			}
 			
-			if (skip) { if (i>0) { skipped++; } printf("\r"); continue; }
+			if (skip) { if (i>0) { skipped++; } /*printf("\r");*/ continue; }
 			
 			// Parity Row?
 			parity_row_offset++;
@@ -274,33 +282,33 @@ void raid6_dp_reParity(int start_row, int end_row) {
 			
 			fp[parity_at] = fopen(chunkfile, "wb");
 			//printf("\tDP_col: %s [%d]\n\n", chunkfile, parity_at);
-			printf(" DP(%d, %d)\n", parity_row_at, parity_at);
+			//printf("DP(%d, %d)", parity_row_at, parity_at);
 
 			// Read buffer by buffer
-			int print_once = 0;
+			//int print_once = 0;
 			long parity_index;
 			for (parity_index = 0; parity_index < CHUNK_SIZE; parity_index += 1) {
 				buffer = 0;
 				parity_buffer = 0;
-				if (!print_once) printf("\t");
+				//if (!print_once) printf("\t");
 				for (column_index = 0; column_index < DISK_TOTAL-1; column_index++) {
 					//if (!print_once) printf("\tused: %d; ", used[column_index]);
 					if (used[column_index] == 1) {
 						//if (fp[column_index] == NULL) continue;
-						if (!print_once) printf("\t%d", column_index);
+						//if (!print_once) printf("\t%d", column_index);
 						buffer = fgetc(fp[column_index]);
 						if (buffer != EOF) parity_buffer = parity_buffer ^ buffer;
 					} else {
-						if (!print_once) printf("\tM");
+						//if (!print_once) printf("\tM");
 					}
 				}
-				if (!print_once) printf("\tDP");
-				print_once = 1;
+				//if (!print_once) printf("\tDP");
+				//print_once = 1;
 				// Write the calcuated parity back to parity file handle
 				fputc(parity_buffer, fp[parity_at]);
 				//printf("Byte %ld OK!\n", parity_index);
 			}
-			printf("\n");
+			//printf("\n");
 			
 			fflush(fp[parity_at]);
 			// Close all opened handles first
@@ -313,19 +321,23 @@ void raid6_dp_reParity(int start_row, int end_row) {
 			}
 		}
 	}
+	
+	printf("Done!\n");
 }
 
 void raid6_fsck() {
 	int recovered_sp = 0;
 	int recovered_dp = 0;
 	
+	printf("Performing fsck:\n");
+	printf("\tPlease wait...");
 	while (recovered_sp < 1 || recovered_dp < 1) {
 		recovered_dp = raid6_fsck_dp();
 		recovered_sp = raid6_fsck_sp();
 	}
 	
 	if (recovered_sp == 1 && recovered_dp == 1) printf("Array rebuild process completed successfully.\n");
-	else printf("Array rebuild process has failed. Perhaps more than 2 disks are missing.\n");
+	else printf("Array rebuild process has failed. Perhaps more than 2 disks are missing!\n");
 }
 
 int raid6_fsck_sp() {
@@ -339,10 +351,9 @@ int raid6_fsck_sp() {
 	long bytes_written;
 	char *chunkfile = NULL;
 	char *parityfile = NULL;
-	//char buffer[BUFFER_SIZE];
+	
 	int buffer;
 	int missing_buffer;
-	//char missing_buffer[BUFFER_SIZE];
 	
 	FILE* fp[DISK_TOTAL];
 	
@@ -365,7 +376,7 @@ int raid6_fsck_sp() {
 		missing_at_row[1] = -1;
 		missing_at_col[0] = -1;
 		missing_at_col[1] = -1;
-		printf("Verifying row %d... ", row_index);
+		//printf("\r\tProgress: verifying row %d (%d%%)...", row_index, row_index * 100 / start_row);
 		
 		int used[DISK_TOTAL-1];
 		int k;
@@ -398,14 +409,17 @@ int raid6_fsck_sp() {
 				used[column_index] = 1;
 			}
 		}
-		
 		if (num_missing == 0) {
-			printf("OK!\n");
+			//printf("OK!");
 		} else if (num_missing == 2) {
 			fully_recovered = 0;
-			printf("Marked for recovery (%d, %d), (%d, %d) with DP... \n", missing_at_row[0], missing_at_col[0], missing_at_row[1], missing_at_col[1]);
+			//printf("\r\tMarked (%d, %d), (%d, %d) for DP fsck\n", missing_at_row[0], missing_at_col[0], missing_at_row[1], missing_at_col[1]);
+			//fflush(stdout);
 		} else if (num_missing == 1){
-			printf("Recovering (%d, %d) with 1P... ", missing_at_row[0], missing_at_col[0]);
+			//printf("Recovering (%d, %d) with 1P... ", missing_at_row[0], missing_at_col[0]);
+			printf("\r\t[SP] Recovering (%d, %d)...", missing_at_row[0], missing_at_col[0]);
+			fflush(stdout);
+			//printf("\tProgress: verifying row %d... (%d%%)", row_index, row_index * 100 / start_row);
 			
 			chunkfile = (char *) realloc(chunkfile, (strlen(DISK_PATH) + strlen(DISK_ARRAY[missing_at_col[0]]) + toDigit(missing_at_row[0]) + 3) * sizeof(char));
 			sprintf(chunkfile, "%s/%s/%d", DISK_PATH, DISK_ARRAY[missing_at_col[0]], missing_at_row[0]);
@@ -414,29 +428,32 @@ int raid6_fsck_sp() {
 			// XOR missing file
 			int print_once = 0;
 			long buffer_index;
-			printf("\n");
+			//printf("\n");
 			for (buffer_index = 0; buffer_index < CHUNK_SIZE; buffer_index += 1) {
 				buffer = 0;
 				missing_buffer = 0;
 				for (column_index = 0; column_index < DISK_TOTAL-1; column_index++) {
 					if (column_index != missing_at_col[0] && used[column_index] == 1) {
-						if (!print_once) printf("\t%d", column_index);
+						//if (!print_once) printf("\t%d", column_index);
 						buffer = fgetc(fp[column_index]);
 						if (buffer != EOF) missing_buffer = missing_buffer ^ buffer;
 					} else {
-						if (!print_once) printf("\tM");
+						//if (!print_once) printf("\tM");
 					}
 				}
-				if (!print_once) printf("\tP\n");
+				//if (!print_once) printf("\tP\n");
 				print_once = 1;
 				
 				// Write the calcuated parity back to parity file handle
 				fputc(missing_buffer, fp[missing_at_col[0]]);
 			}
 			fflush(fp[missing_at_col[0]]);
-			printf("Recovered!\n");
+			printf("recovered.\n");
+			fflush(stdout);
+			//printf("\tProgress: verifying row %d... (%d%%)", row_index, row_index * 100 / start_row);
 		} else {
-			printf("Unrecoverable.\n");
+			printf("\r\tUnrecoverable!\n", missing_at_row[0], missing_at_col[0]);
+			fflush(stdout);
 			break;
 		}
 		
@@ -450,7 +467,7 @@ int raid6_fsck_sp() {
 	}
 	
 	if (fully_recovered == 0) {
-		printf("Continuing recovery...\n");
+		//printf("Continuing recovery...\n");
 		return 0;
 	} else {
 		return 1;
@@ -489,7 +506,7 @@ int raid6_fsck_dp() {
 	
 	for (row_index = 0; row_index <= start_row; row_index=row_index+(DISK_TOTAL-2)) {
 		parity_at = DISK_TOTAL - 1;
-		printf("Verifying for rows %d-%d: \n", row_index, row_index+DISK_TOTAL-3);
+		//printf("Verifying for rows %d-%d: \n", row_index, row_index+DISK_TOTAL-3);
 		
 		int i;
 		int skipped = 0;
@@ -506,7 +523,7 @@ int raid6_fsck_dp() {
 			missing_at_col[1] = -1;
 			
 			// Open file handles for diagonal blocks
-			printf("\tSet %d: ", row_index+i-skipped);
+			//printf("\tSet %d: ", row_index+i-skipped);
 			int j = data_col_start;
 			int j_count = -1;
 			int skip = 1;
@@ -536,9 +553,9 @@ int raid6_fsck_dp() {
 				if (fp[data_col] == NULL) {
 					if (data_row > lastIndex[1]
 						|| (data_row == lastIndex[1] && data_col > lastIndex[0])) {
-						printf("[%d, %d], ", data_row, data_col);
+						//printf("[%d, %d], ", data_row, data_col);
 					} else {
-						printf("X{%d, %d}, ", data_row, data_col);
+						//printf("X{%d, %d}, ", data_row, data_col);
 						if (num_missing < 2) {
 							missing_at_row[num_missing] = data_row;
 							missing_at_col[num_missing] = data_col;
@@ -547,11 +564,11 @@ int raid6_fsck_dp() {
 					}
 				} else {
 					used[data_col] = 1;
-					printf("(%d, %d), ", data_row, data_col);
+					//printf("(%d, %d), ", data_row, data_col);
 				}
 			}
 			
-			if (skip) { if (i>0) { skipped++; } printf("\r"); continue; }
+			if (skip) { if (i>0) { skipped++; } /*printf("\r");*/ continue; }
 			
 			// Parity Row?
 			parity_row_offset++;
@@ -565,7 +582,7 @@ int raid6_fsck_dp() {
 			sprintf(chunkfile, "%s/%s/%d", DISK_PATH, DISK_ARRAY[parity_at], parity_row_at);
 			fp[parity_at] = fopen(chunkfile, "rb");
 			if (fp[parity_at] == NULL) {
-				printf("X{%d, %d}, ", parity_row_at, parity_at);
+				//printf("X{%d, %d}, ", parity_row_at, parity_at);
 				if (num_missing < 2) {
 					missing_at_row[num_missing] = parity_row_at;
 					missing_at_col[num_missing] = parity_at;
@@ -573,21 +590,24 @@ int raid6_fsck_dp() {
 				}
 			} else {
 				used[parity_at] = 1;
-				printf("(%d, %d), ", parity_row_at, parity_at);
+				//printf("(%d, %d), ", parity_row_at, parity_at);
 			}
 			
 			if (num_missing == 0) {
-				printf("...OK!\n");
+				//printf("OK!");
 			} else if (num_missing == 1) {
+				printf("\r\t[DP] Recovering (%d, %d)...", missing_at_row[0], missing_at_col[0]);
+				fflush(stdout);
+				
 				// Missing file
 				chunkfile = (char *) realloc(chunkfile, (strlen(DISK_PATH) + strlen(DISK_ARRAY[missing_at_col[0]]) + toDigit(missing_at_row[0]) + 3) * sizeof(char));
 				sprintf(chunkfile, "%s/%s/%d", DISK_PATH, DISK_ARRAY[missing_at_col[0]], missing_at_row[0]);
 				fp[missing_at_col[0]] = fopen(chunkfile, "wb");
 				
 				// Read buffer by buffer
-				int print_once = 0;
+				//int print_once = 0;
 				long parity_index;
-				printf("\n");
+				//printf("\n");
 				for (parity_index = 0; parity_index < CHUNK_SIZE; parity_index += 1) {
 					buffer = 0;
 					missing_buffer = 0;
@@ -595,24 +615,26 @@ int raid6_fsck_dp() {
 						//if (!print_once) printf("\tused: %d; ", used[column_index]);
 						if (used[column_index] == 1) {
 							//if (fp[column_index] == NULL) continue;
-							if (!print_once) printf("\t%d", column_index);
+							//if (!print_once) printf("\t%d", column_index);
 							buffer = fgetc(fp[column_index]);
 							if (buffer != EOF) missing_buffer = missing_buffer ^ buffer;
 						} else {
-							if (!print_once) printf("\tM");
+							//if (!print_once) printf("\tM");
 						}
 					}
-					if (!print_once) printf("\tDP");
-					print_once = 1;
+					//if (!print_once) printf("\tDP");
+					//print_once = 1;
 					// Write the calcuated parity back to parity file handle
 					fputc(missing_buffer, fp[missing_at_col[0]]);
 					//printf("Byte %ld OK!\n", parity_index);
 				}
 				fflush(fp[missing_at_col[0]]);
-				printf("\n\t..Recovered!\n");
+				printf("recovered.\n");
+				fflush(stdout);
 			} else {
 				fully_recovered = 0;
-				printf("... skip first.\n");
+				fflush(stdout);
+				//printf("... skip first.\n");
 			}
 			
 			// Close all opened handles first
@@ -627,7 +649,7 @@ int raid6_fsck_dp() {
 	}
 	
 	if (fully_recovered == 0) {
-		printf("Continuing recovery...\n");
+		//printf("Continuing recovery...\n");
 		return 0;
 	} else {
 		//printf("Recovery completed!\n");
@@ -660,7 +682,7 @@ void raid6_getFile(bf_file* file, char *outfile) {
 		file_out = fopen(outfile, "wb");
 	}
 	
-	if (!to_stdout) printf("Progress: 0...");
+	if (!to_stdout) printf("\tProgress: 0%%...");
 	int total_size_written = 0;
 	int i;
 	for (i = 0; i < file->total_chunks; i++) {
@@ -700,10 +722,11 @@ void raid6_getFile(bf_file* file, char *outfile) {
 		total_size_written += bytes_written;
 		fclose(fp);
 		
-		if (!to_stdout) printf("%d...", ((i+1)*100)/file->total_chunks);
+		if (!to_stdout) printf("\r\tProgress: %d%%...", ((i+1)*100)/file->total_chunks);
+		fflush(stdout);
 	}
 
-	if (!to_stdout) printf("done!\n");
+	if (!to_stdout) printf("Done!\n");
 	free(file);
 	free(chunkfile);
 	fclose(file_out);

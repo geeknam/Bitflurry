@@ -18,6 +18,9 @@ void fs_putFile(char *filename, int raidLevel) {
 		case 0:
 			raid0_putFile(filename);
 			break;
+		case 4:
+			raid4_putFile(filename);
+			break;
 		case 5:
 			raid5_putFile(filename);
 			break;
@@ -42,6 +45,9 @@ void fs_getFile(char *filename, int raidLevel, char *outfile) {
 			case 0:
 				raid0_getFile(file, outfile);
 				break;
+			case 4:
+				raid4_getFile(file, outfile);
+				break;
 			case 5:
 				raid5_getFile(file, outfile);
 				break;
@@ -59,6 +65,9 @@ void fs_fsck(int raidLevel) {
 	switch (raidLevel) {
 		case 0:
 			raid0_fsck();
+			break;
+		case 4:
+			raid4_fsck();
 			break;
 		case 5:
 			raid5_fsck();

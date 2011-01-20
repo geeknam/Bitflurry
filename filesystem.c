@@ -35,7 +35,7 @@ void fs_putFile(char *filename, int raidLevel) {
 	}
 	
 	end_time = time(NULL);
-	printf("The operation took %s seconds.\n", end_time-start_time);
+	printf("The operation took %d seconds.\n", end_time-start_time);
 }
 
 
@@ -68,7 +68,7 @@ void fs_getFile(char *filename, int raidLevel, char *outfile) {
 	}
 
 	end_time = time(NULL);
-	if (!to_stdout) printf("The operation took %s seconds.\n", end_time-start_time);
+	if (!to_stdout) printf("The operation took %d seconds.\n", end_time-start_time);
 }
 
 void fs_fsck(int raidLevel) {
@@ -93,5 +93,5 @@ void fs_fsck(int raidLevel) {
 	}
 	
 	end_time = time(NULL);
-	printf("The operation took %s seconds.\n", end_time-start_time);
+	printf("The operation took %d seconds.\n", end_time-start_time);
 }

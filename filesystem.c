@@ -14,6 +14,9 @@ long fs_getFileSize(char *filename){
 
 // split file into chunk and put them in our storage arrays
 void fs_putFile(char *filename, int raidLevel) {
+	time_t start_time, end_time;
+	start_time = time(NULL);
+	
 	switch (raidLevel) {
 		case 0:
 			raid0_putFile(filename);
@@ -30,10 +33,15 @@ void fs_putFile(char *filename, int raidLevel) {
 		default:
 			printf("No RAID level specified. Cannot continue.");
 	}
+	
+	end_time = time(NULL);
+	printf("The operation took %s seconds.\n", end_time-start_time);
 }
 
 
 void fs_getFile(char *filename, int raidLevel, char *outfile) {
+	time_t start_time, end_time;
+	start_time = time(NULL);
 	
 	bf_file * file = db_getFile(filename);
 	
@@ -59,9 +67,14 @@ void fs_getFile(char *filename, int raidLevel, char *outfile) {
 		}
 	}
 
+	end_time = time(NULL);
+	if (!to_stdout) printf("The operation took %s seconds.\n", end_time-start_time);
 }
 
 void fs_fsck(int raidLevel) {
+	time_t start_time, end_time;
+	start_time = time(NULL);
+	
 	switch (raidLevel) {
 		case 0:
 			raid0_fsck();
@@ -78,4 +91,7 @@ void fs_fsck(int raidLevel) {
 		default:
 			printf("No RAID level specified. Cannot continue.");
 	}
+	
+	end_time = time(NULL);
+	printf("The operation took %s seconds.\n", end_time-start_time);
 }

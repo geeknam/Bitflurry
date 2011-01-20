@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <math.h>
 #include <libgen.h>
+#include <time.h>
 
 #include "database.h"
 #include "bitflurry.h"

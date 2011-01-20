@@ -110,7 +110,7 @@ void raid5_putFile(char *filename) {
 							bytes_read = sizeof(pad_buffer);
 							bytes_to_write = bytes_read;
 							memset(pad_buffer, '\0', bytes_to_write);
-							//fwrite(pad_buffer, 1, bytes_to_write, fp_out);					 // write bytes from buffer to the current slice
+							fwrite(pad_buffer, 1, bytes_to_write, fp_out);					 // write bytes from buffer to the current slice
 						} else {
 							fwrite(buffer, 1, bytes_read, fp_out);					 // write bytes from buffer to the current slice
 						}
@@ -199,7 +199,7 @@ void raid5_reParity(int start_row, int end_row) {
 			fputc(parity_buffer, fp[parity_at]);
 		}
 		
-		printf("\rProgress: %d%%...", row_index * 100 / end_row);
+		printf("\rProgress: %d%%...", (row_index + 1) * 100 / (end_row + 1));
 		fflush(stdout);
 		
 	}
@@ -269,6 +269,7 @@ void raid5_fsck() {
 		
 		if (missing_at >= 0) {
 			printf("Recovering row %d... ", row_index);
+			fflush(stdout);
 			
 			// XOR valid columns to obtain missing column
 			long buffer_index;
@@ -278,7 +279,7 @@ void raid5_fsck() {
 				for (column_index = 0; column_index < DISK_TOTAL; column_index++) {
 					if (
 						column_index != missing_at &&
-						!(row_index == start_row && column_index >= start_col) // Don't consider end of drive else we may segfault on a missing col
+						fp[column_index] != NULL // Don't consider end of drive else we may segfault on a missing col
 					) {
 						buffer = fgetc(fp[column_index]);
 						if (buffer != EOF) missing_buffer = missing_buffer ^ buffer;

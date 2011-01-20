@@ -143,7 +143,7 @@ void raid6_reParity(int start_row, int end_row) {
 	
 	for (row_index = start_row; row_index <= end_row; row_index++) {
 		parity_at = DISK_TOTAL - 2;
-		printf("\r\tProgress: row %d (%d%%)...", row_index, row_index * 100 / end_row);
+		printf("\r\tProgress: row %d (%d%%)...", row_index, (row_index + 1) * 100 / (end_row + 1));
 		fflush(stdout);
 		
 		// Open file handles for each column
@@ -226,7 +226,7 @@ void raid6_dp_reParity(int start_row, int end_row) {
 			if (data_col_start < 0) data_col_start = (DISK_TOTAL-2);
 			
 			// Open file handles for diagonal blocks
-			printf("\r\tParity for rows %d-%d, set %d (%d%%)...", row_index, row_index+DISK_TOTAL-3, row_index+i-skipped, (row_index+i-skipped-1) * 100 / end_row);
+			printf("\r\tParity for rows %d-%d, set %d (%d%%)...", row_index, row_index + DISK_TOTAL - 3, row_index + i - skipped, (row_index + i - skipped) * 100 / (end_row + 1));
 			fflush(stdout);
 			int j = data_col_start;
 			int j_count = -1;

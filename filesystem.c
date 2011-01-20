@@ -14,8 +14,8 @@ long fs_getFileSize(char *filename){
 
 // split file into chunk and put them in our storage arrays
 void fs_putFile(char *filename, int raidLevel) {
-	time_t start_time, end_time;
-	start_time = time(NULL);
+	struct timeval start_time, end_time;
+	gettimeofday(&start_time, NULL);
 	
 	switch (raidLevel) {
 		case 0:
@@ -34,14 +34,14 @@ void fs_putFile(char *filename, int raidLevel) {
 			printf("No RAID level specified. Cannot continue.");
 	}
 	
-	end_time = time(NULL);
-	printf("The operation took %d seconds.\n", end_time-start_time);
+	gettimeofday(&end_time, NULL);
+	printf("The operation took %d seconds.\n", (end_time.tv_usec-start_time.tv_usec)*1000);
 }
 
 
 void fs_getFile(char *filename, int raidLevel, char *outfile) {
-	time_t start_time, end_time;
-	start_time = time(NULL);
+	struct timeval start_time, end_time;
+	gettimeofday(&start_time, NULL);
 	
 	bf_file * file = db_getFile(filename);
 	
@@ -67,13 +67,13 @@ void fs_getFile(char *filename, int raidLevel, char *outfile) {
 		}
 	}
 
-	end_time = time(NULL);
-	if (!to_stdout) printf("The operation took %d seconds.\n", end_time-start_time);
+	gettimeofday(&end_time, NULL);
+	if (!to_stdout) printf("The operation took %d seconds.\n", (end_time.tv_usec-start_time.tv_usec)*1000);
 }
 
 void fs_fsck(int raidLevel) {
-	time_t start_time, end_time;
-	start_time = time(NULL);
+	struct timeval start_time, end_time;
+	gettimeofday(&start_time, NULL);
 	
 	switch (raidLevel) {
 		case 0:
@@ -92,6 +92,6 @@ void fs_fsck(int raidLevel) {
 			printf("No RAID level specified. Cannot continue.");
 	}
 	
-	end_time = time(NULL);
-	printf("The operation took %d seconds.\n", end_time-start_time);
+	gettimeofday(&end_time, NULL);
+	printf("The operation took %d seconds.\n", (end_time.tv_usec-start_time.tv_usec)*1000);
 }

@@ -8,6 +8,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <math.h>
+#include <libgen.h>
 
 #include "database.h"
 #include "bitflurry.h"

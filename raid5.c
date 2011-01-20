@@ -51,6 +51,8 @@ void raid5_putFile(char *filename) {
 
 	fp_in = fopen(filename, "rb");							// open original file
 
+	filename = basename(filename);
+
 	// Make sure there is no duplicate filename in the database
 	while (db_isFileExist(filename)) {
 		char *filename_new = malloc((strlen(filename) + 5) * sizeof(char));

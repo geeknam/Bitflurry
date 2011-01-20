@@ -29,6 +29,8 @@ void raid6_putFile(char *filename) {
 
 	fp_in = fopen(filename, "rb");								// open original file
 
+	filename = basename(filename);
+
 	// Make sure there is no duplicate filenames in the database
 	while (db_isFileExist(filename)) {
 		char *filename_new = malloc((strlen(filename) + 5) * sizeof(char));

@@ -189,7 +189,16 @@ int init(int force) {
 
 void putFile(char *filename) {
 	if (!init(0)) return;
-	fs_putFile(filename, DISK_RAID);
+	
+	// Test if the file exists
+	FILE *fp_test = fopen(filename, "rb");
+	if (fp_test == NULL) {
+		printf("Error: File does not exist or is not readable.\n");
+		return;
+	} else {
+		fclose(fp_test);
+		fs_putFile(filename, DISK_RAID);
+	}
 }
 
 void getFile(char *filename, char *outfile) {

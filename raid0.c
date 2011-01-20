@@ -46,7 +46,7 @@ void raid0_putFile(char *filename) {
 	db_getLastIndex(lastIndex);
 	//printf("Last - Row: %d, Col: %d\n\n", lastIndex[1], lastIndex[0]);
 
-	printf("Progress: 0...");
+	printf("Progress: 0%%...");
 	for (slice_index = 0; slice_index <= num_slices; slice_index++) {
 		lastIndex[0]++;
 		if (lastIndex[0] >= DISK_TOTAL) { lastIndex[1]++; lastIndex[0] = 0; }
@@ -92,20 +92,21 @@ void raid0_putFile(char *filename) {
 		
 		if (db_insertChunk_cacheStatement(&stmt, id, lastIndex[0], lastIndex[1], slice_index) < 1) break;
 		//printf("Inserted for order: %d at (%d, %d)\n", slice_index, lastIndex[1], lastIndex[0]);
-		printf("%d...", (int) (((slice_index+1)*100)/(num_slices+1)));
+		printf("\rProgress: %d%%...", (int) (((slice_index+1)*100)/(num_slices+1)));
 		fflush(stdout);
 	}
 	
+	fclose(fp_in);	// Close the original file
+	free(file_out); // Free memory
+	printf(" Done!\n\n");
+	
+	printf("Committing file to database...\n");
 	if (db_insertChunk_cacheCommit(stmt) != SQLITE_OK) {
-		printf("Fatal error: Unable to commit chunk to database.");
+		printf("Unable to commit file slices to database. Filesystem is in an inconsistent state.\n\n");
+	} else {
+		printf("File transaction completed successfully!\n\n");
 	}
 	
-	printf("done!\n");
-	printf("\nFile transaction completed successfully.\n");
-	//printf("\nDB Insert Completed.\n");
-	
-	fclose(fp_in);			// close the original file	
-	free(file_out);			// free the memory
 }
 
 void raid0_getFile(bf_file* file, char *outfile) {
@@ -133,7 +134,7 @@ void raid0_getFile(bf_file* file, char *outfile) {
 		file_out = fopen(outfile, "wb");
 	}
 	
-	if (!to_stdout) printf("Progress: 0...");
+	if (!to_stdout) printf("Progress: 0%%...");
 	int total_size_written = 0;
 	int i;
 	for (i = 0; i < file->total_chunks; i++) {
@@ -173,18 +174,18 @@ void raid0_getFile(bf_file* file, char *outfile) {
 		total_size_written += bytes_written;
 		fclose(fp);
 		
-		if (!to_stdout) printf("%d...", ((i+1)*100)/file->total_chunks);
+		if (!to_stdout) printf("\rProgress: %d%%...", ((i+1)*100)/file->total_chunks);
 	}
 
-	if (!to_stdout) printf("done!\n");
+	if (!to_stdout) printf(" Done!\n\n");
 	free(file);
 	free(chunkfile);
 	fclose(file_out);
 	
-	if (!to_stdout) printf("\nFile transaction completed successfully.\n");
+	if (!to_stdout) printf("File transaction completed successfully.\n\n");
 
 }
 
 void raid0_fsck() {
-	printf("\nFilesystem integrity checking not supported in RAID 0");
+	printf("Filesystem integrity checking not supported in RAID 0.\n\n");
 }

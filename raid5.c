@@ -68,13 +68,13 @@ void raid5_putFile(char *filename) {
 	int column_index;
 	int parity_at;
 
-	for (row_index = start_row; row_index <= end_row; row_index++) {
+	for (row_index = start_row; row_index < end_row; row_index++) {
 		parity_at = DISK_TOTAL - 1 - row_index % DISK_TOTAL;
 		for (column_index = 0; column_index < DISK_TOTAL; column_index++) {
 			// Skip heading and tail columns
 			if (
 				(row_index == start_row && column_index < start_col) ||
-				(row_index == end_row && slice_index - 1 > num_slices)
+				(row_index == end_row && slice_index > num_slices)
 			) {
 				continue;
 			} else {
@@ -110,7 +110,7 @@ void raid5_putFile(char *filename) {
 							bytes_read = sizeof(pad_buffer);
 							bytes_to_write = bytes_read;
 							memset(pad_buffer, '\0', bytes_to_write);
-							fwrite(pad_buffer, 1, bytes_to_write, fp_out);					 // write bytes from buffer to the current slice
+							//fwrite(pad_buffer, 1, bytes_to_write, fp_out);					 // write bytes from buffer to the current slice
 						} else {
 							fwrite(buffer, 1, bytes_read, fp_out);					 // write bytes from buffer to the current slice
 						}
@@ -125,7 +125,7 @@ void raid5_putFile(char *filename) {
 					}
 					bytes_written = 0;
 					
-					printf("\rProgress: %d%%...", slice_index * 100 / (num_slices + 1));
+					printf("\rProgress: %d%%...", slice_index * 100 / num_slices);
 					fflush(stdout);
 					
 					slice_index++;
@@ -135,19 +135,18 @@ void raid5_putFile(char *filename) {
 		}
 	}
 	
+	fclose(fp_in);	// Close the original file
+	free(file_out); // Free memory
+	printf(" Done!\n\n");
+	
+	raid5_reParity(start_row, end_row - 1);
+	
+	printf("Committing file to database...\n");
 	if (db_insertChunk_cacheCommit(stmt) != SQLITE_OK) {
-		printf("Fatal error: Unable to commit chunk to database.");
+		printf("Unable to commit file slices to database. Filesystem is in an inconsistent state.\n\n");
+	} else {
+		printf("File transaction completed successfully!\n\n");
 	}
-	
-	printf("Done!\n");
-	
-	raid5_reParity(start_row, end_row);
-	
-	printf("\nFile transaction completed successfully.\n");
-	//printf("\nDB Insert Completed.\n");
-	
-	fclose(fp_in);			// close the original file	
-	free(file_out);			// free the memory
 
 }
 
@@ -198,14 +197,15 @@ void raid5_reParity(int start_row, int end_row) {
 			}
 			// Write the calcuated parity back to parity file handle
 			fputc(parity_buffer, fp[parity_at]);
-			fflush(stdout);
 		}
+		
 		printf("\rProgress: %d%%...", row_index * 100 / end_row);
+		fflush(stdout);
 		
 	}
 	
 	free(fp);
-	printf("Done!\n");
+	printf(" Done!\n\n");
 	
 }
 
@@ -276,7 +276,10 @@ void raid5_fsck() {
 				buffer = 0;
 				missing_buffer = 0;
 				for (column_index = 0; column_index < DISK_TOTAL; column_index++) {
-					if (column_index != missing_at) {
+					if (
+						column_index != missing_at &&
+						!(row_index == start_row && column_index >= start_col) // Don't consider end of drive else we may segfault on a missing col
+					) {
 						buffer = fgetc(fp[column_index]);
 						if (buffer != EOF) missing_buffer = missing_buffer ^ buffer;
 					}
@@ -289,7 +292,7 @@ void raid5_fsck() {
 		
 	}
 	
-	printf("Done!\n");
+	printf("Done!\n\n");
 	free(fp);
 	
 }
@@ -361,12 +364,12 @@ void raid5_getFile(bf_file* file, char *outfile) {
 		fflush(stdout);
 	}
 
-	if (!to_stdout) printf("Done!\n");
+	if (!to_stdout) printf(" Done!\n\n");
 	free(file);
 	free(chunkfile);
 	fclose(file_out);
 	
-	if (!to_stdout) printf("\nFile transaction completed successfully.\n");
+	if (!to_stdout) printf("File transaction completed successfully.\n\n");
 
 }
 

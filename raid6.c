@@ -95,7 +95,7 @@ void raid6_putFile(char *filename) {
 		
 		if (db_insertChunk_cacheStatement(&stmt, id, lastIndex[0], lastIndex[1], slice_index) < 1) break;
 		//printf("Inserted for order: %d at (%d, %d)\n", slice_index, lastIndex[1], lastIndex[0]);
-		printf("\r\tProgress: %d%%...", (slice_index + 1) * 100 / (num_slices + 1));
+		printf("\r\tProgress: %ld%%...", (slice_index + 1) * 100 / (num_slices + 1));
 		fflush(stdout);
 	}
 	

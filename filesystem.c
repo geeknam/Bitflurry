@@ -35,7 +35,7 @@ void fs_putFile(char *filename, int raidLevel) {
 	}
 	
 	gettimeofday(&end_time, NULL);
-	printf("The operation took %d seconds.\n", (end_time.tv_usec-start_time.tv_usec)*1000);
+	printf("The operation took %d miliseconds.\n", (end_time.tv_usec-start_time.tv_usec)/1000);
 }
 
 
@@ -68,7 +68,7 @@ void fs_getFile(char *filename, int raidLevel, char *outfile) {
 	}
 
 	gettimeofday(&end_time, NULL);
-	if (!to_stdout) printf("The operation took %d seconds.\n", (end_time.tv_usec-start_time.tv_usec)*1000);
+	if (!to_stdout) printf("The operation took %d miliseconds.\n", (end_time.tv_usec-start_time.tv_usec)/1000);
 }
 
 void fs_fsck(int raidLevel) {
@@ -93,5 +93,5 @@ void fs_fsck(int raidLevel) {
 	}
 	
 	gettimeofday(&end_time, NULL);
-	printf("The operation took %d seconds.\n", (end_time.tv_usec-start_time.tv_usec)*1000);
+	printf("The operation took %d miliseconds.\n", (end_time.tv_usec-start_time.tv_usec)/1000);
 }

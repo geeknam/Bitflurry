@@ -1,5 +1,14 @@
 #include "filesystem.h"
 
+static int difference_micro(struct timeval *bBefore,
+struct timeval *aAfter)
+{
+	return (signed long long) aAfter->tv_sec * 1000000ll +
+	       (signed long long) aAfter->tv_usec -
+	       (signed long long) bBefore->tv_sec * 1000000ll -
+	       (signed long long) bBefore->tv_usec;
+}
+
 /* Get size in bytes of the specified file */
 long fs_getFileSize(char *filename){
     struct stat statBuffer;
@@ -35,7 +44,7 @@ void fs_putFile(char *filename, int raidLevel) {
 	}
 	
 	gettimeofday(&end_time, NULL);
-	printf("The operation took %d miliseconds.\n", (end_time.tv_usec-start_time.tv_usec)/1000);
+	printf("The operation took %d miliseconds.\n", difference_micro(&start_time, &end_time)/1000);
 }
 
 
@@ -68,7 +77,7 @@ void fs_getFile(char *filename, int raidLevel, char *outfile) {
 	}
 
 	gettimeofday(&end_time, NULL);
-	if (!to_stdout) printf("The operation took %d miliseconds.\n", (end_time.tv_usec-start_time.tv_usec)/1000);
+	if (!to_stdout) printf("The operation took %d miliseconds.\n", difference_micro(&start_time, &end_time)/1000);
 }
 
 void fs_fsck(int raidLevel) {
@@ -93,5 +102,5 @@ void fs_fsck(int raidLevel) {
 	}
 	
 	gettimeofday(&end_time, NULL);
-	printf("The operation took %d miliseconds.\n", (end_time.tv_usec-start_time.tv_usec)/1000);
+	printf("The operation took %d miliseconds.\n", difference_micro(&start_time, &end_time)/1000);
 }
